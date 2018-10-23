@@ -23,7 +23,7 @@ public class Cliente2 {
 		Socket socket = null;
 		PrintWriter escritor = null;
 		BufferedReader lector = null;
-		
+		int ok = 0;
 
 		try
 		{
@@ -38,36 +38,57 @@ public class Cliente2 {
 		fromUser = stdIn.readLine();
 		escritor.println(fromUser);
 		int estado = 0;
-		while (ejecutar && estado < 6 && fromUser  != null) 
+		while (ejecutar && fromUser  != null) 
 		{
-			switch(estado)
+			
+			fromServer = lector.readLine();
+			System.out.println(fromServer);
+			if (fromServer.equals("ERROR"))
 			{
-			case 0:
-				if (!(fromUser.equalsIgnoreCase("HOLA")))
+				System.out.println("se murio");
+				break;
+			}
+			System.out.print("Escriba los algoritmos");
+			fromUser = stdIn.readLine();
+			escritor.println(fromUser);
+			fromServer = lector.readLine();
+			if (fromServer.equals("ERROR"))
+			{
+				System.out.println("se murio");
+				break;
+			}
+			else if(fromServer.equals("OK"))
+			{
+				System.out.println("todo piloto");
+			}
+			fromServer = lector.readLine();
+			System.out.print(fromServer);
+			fromServer = lector.readLine();
+			System.out.print(fromServer);
+			System.out.println("Mandar Certificado");
+			fromUser = stdIn.readLine();
+			escritor.println(fromUser);
+			
+				if (fromServer.equals("ERROR"))
 				{
-				ejecutar = false;
-				escritor.println("ERROR");
+					System.out.println("se murio");
+					break;
 				}
-				else
+				else if(fromServer.equals("OK"))
 				{
-				escritor.println("HOLA");
-				estado ++;
+					System.out.println("todo piloto");
+					break;
 				}
+			
 				
-			case 1:
-				if ((fromServer = lector.readLine()).equals("OK"))
-				{
-					fromUser = "ALGORTIMOS:AES:RSA:HmacMD5";
-					escritor.println(fromUser);
-				}
 				
 			
-			}	
-		
-		
 		}
 		
+		
+		
 		} 
+		
 		catch (Exception e)
 		{
 		System.err.println("Exception: " + e.getMessage());
@@ -75,5 +96,9 @@ public class Cliente2 {
 		}
 		
 	}
+	
+	
+	
+	
 
 	}
