@@ -15,6 +15,9 @@ public class Cliente2 {
 		this.br = br;
 	}
 	
+	
+	
+	
 	public static void main(String[] args) throws IOException
 	{
 		
@@ -23,7 +26,7 @@ public class Cliente2 {
 		Socket socket = null;
 		PrintWriter escritor = null;
 		BufferedReader lector = null;
-		int ok = 0;
+		
 
 		try
 		{
@@ -38,57 +41,36 @@ public class Cliente2 {
 		fromUser = stdIn.readLine();
 		escritor.println(fromUser);
 		int estado = 0;
-		while (ejecutar && fromUser  != null) 
+		while (ejecutar && estado < 6 && fromUser  != null) 
 		{
-			
-			fromServer = lector.readLine();
-			System.out.println(fromServer);
-			if (fromServer.equals("ERROR"))
+			switch(estado)
 			{
-				System.out.println("se murio");
-				break;
-			}
-			System.out.print("Escriba los algoritmos");
-			fromUser = stdIn.readLine();
-			escritor.println(fromUser);
-			fromServer = lector.readLine();
-			if (fromServer.equals("ERROR"))
-			{
-				System.out.println("se murio");
-				break;
-			}
-			else if(fromServer.equals("OK"))
-			{
-				System.out.println("todo piloto");
-			}
-			fromServer = lector.readLine();
-			System.out.print(fromServer);
-			fromServer = lector.readLine();
-			System.out.print(fromServer);
-			System.out.println("Mandar Certificado");
-			fromUser = stdIn.readLine();
-			escritor.println(fromUser);
-			
-				if (fromServer.equals("ERROR"))
+			case 0:
+				if (!(fromUser.equalsIgnoreCase("HOLA")))
 				{
-					System.out.println("se murio");
-					break;
+				ejecutar = false;
+				escritor.println("ERROR");
 				}
-				else if(fromServer.equals("OK"))
+				else
 				{
-					System.out.println("todo piloto");
-					break;
+				escritor.println("HOLA");
+				estado ++;
 				}
-			
 				
+			case 1:
+				if ((fromServer = lector.readLine()).equals("OK"))
+				{
+					fromUser = "ALGORTIMOS:AES:RSA:HmacMD5";
+					escritor.println(fromUser);
+				}
 				
 			
+			}	
+		
+		
 		}
 		
-		
-		
 		} 
-		
 		catch (Exception e)
 		{
 		System.err.println("Exception: " + e.getMessage());
@@ -96,9 +78,5 @@ public class Cliente2 {
 		}
 		
 	}
-	
-	
-	
-	
 
 	}

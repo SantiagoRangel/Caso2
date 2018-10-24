@@ -84,8 +84,7 @@ public class Cliente {
 	{
 		byte[] enByt = texto.getBytes("UTF8");
 
-		KeyGenerator keyGen = KeyGenerator.getInstance(algoritmo);		
-		keyGen.init(Integer.parseInt(tamanio));
+		KeyGenerator keyGen = KeyGenerator.getInstance(algoritmo);
 		Cipher cipher = Cipher.getInstance(algoritmo + "/" + metodo + "/PKSC5Padding" );
 		cipher.init(Cipher.DECRYPT_MODE, llaveServidor);
 		// Decrypt the ciphertext using the same key
