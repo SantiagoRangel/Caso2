@@ -28,6 +28,11 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.crypto.AsymmetricBlockCipher;
+import org.bouncycastle.crypto.engines.RSAEngine;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PrivateKeyFactory;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.Extension;
@@ -41,6 +46,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.util.encoders.Hex;
 import org.bouncycastle.x509.X509V1CertificateGenerator;
 
 public class Cliente {
@@ -49,7 +55,7 @@ public class Cliente {
 	public static final int PUERTO = 8081;
 	private static PrivateKey llavePrivada;
 	public static PublicKey llavePublica;
-	private static byte[] llaveSimetrica;
+	private static SecretKeySpec llaveSimetrica;
 	private Date fecha;
 
 	public Cliente(BufferedReader br) {
@@ -107,35 +113,70 @@ public class Cliente {
 	 * bits y un texto Ej: AES, ECB, 128, bananana
 	 */
 
-	public static String encriptarConPKSC5(String algoritmo, String metodo, byte[] texto, SecretKey llaveSecreta)throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-			IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
-		Cipher cipher = null;
-		byte[] enByt = texto;
-		if (algoritmo.equals("AES")) {
-			cipher = Cipher.getInstance(algoritmo);
-		} else {
-			cipher = Cipher.getInstance(algoritmo);
+//	public static String encriptarConPKSC5(String algoritmo, String metodo, byte[] texto, SecretKey llaveSecreta)throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+//			IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
+//		Cipher cipher = null;
+//		byte[] enByt = texto;
+//		if (algoritmo.equals("AES")) {
+//			cipher = Cipher.getInstance(algoritmo);
+//		} else {
+//			cipher = Cipher.getInstance(algoritmo);
+//		}
+//		cipher.init(Cipher.ENCRYPT_MODE, llaveSecreta);
+//		return new String(cipher.doFinal(enByt), "UTF8");
+//	}
+//
+//	/*
+//	 * Metodo para desencriptar dado un algoritmo, un metodo de encriptacion, tamaño
+//	 * en bits y una llave Ej: AES, ECB, 128, bananana
+//	 */
+//
+//	public static String desencriptarConPKSC5(String algoritmo, String metodo, byte[] texto, PublicKey llavePub) throws IllegalBlockSizeException, BadPaddingException,
+//			UnsupportedEncodingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException {
+//		Cipher cipher = null;
+//		if(algoritmo.equals("AES"))
+//		cipher = Cipher.getInstance("RSA/ECB/PKCS5Padding");
+//		else
+//		{
+//			cipher = Cipher.getInstance("RSA/CBC/PKCS5Padding");
+//		}
+//		
+//		cipher.init(Cipher.DECRYPT_MODE, llavePub);
+//		// Decrypt the ciphertext using the same key
+//		byte[] newPlainText = cipher.doFinal(texto);
+//		return new String(newPlainText, "UTF8");
+//	}
+
+	// Cifrado Asimetrico
+
+		/*
+		 * Metodo para desencriptar dado un algoritmo, un metodo de encriptacion, tamaño
+		 * en bits y una llave Ej: AES, ECB, 128, bananana
+		 */
+
+		public static String procesoAsimetrico(byte[] texto, String algoritmo, PublicKey llavePub) throws IllegalBlockSizeException, BadPaddingException,
+				UnsupportedEncodingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException {
+
+			try {
+				Cipher cifrador = Cipher.getInstance("RSA");
+				cifrador.init(Cipher.DECRYPT_MODE, llavePrivada);
+				
+				
+				byte[] decoded = cifrador.doFinal(Hex.decode(texto));
+				llaveSimetrica = new SecretKeySpec(decoded, 0, decoded.length, algoritmo); algoritmo += "/ECB/PKCS5Padding";
+				String testo = new String(decoded, "UTF8");
+				
+				cifrador.init(Cipher.ENCRYPT_MODE, llavePub);
+				byte[] cifrado = cifrador.doFinal(decoded);
+				String textox = printByteArrayHexa(cifrado);
+				return textox;
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return null;
 		}
-		cipher.init(Cipher.ENCRYPT_MODE, llaveSecreta);
-		return new String(cipher.doFinal(enByt), "UTF8");
-	}
-
-	/*
-	 * Metodo para desencriptar dado un algoritmo, un metodo de encriptacion, tamaño
-	 * en bits y una llave Ej: AES, ECB, 128, bananana
-	 */
-
-	public static String desencriptarConPKSC5(String algoritmo, String metodo, byte[] texto) throws IllegalBlockSizeException, BadPaddingException,
-			UnsupportedEncodingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException {
-
-		KeyGenerator keyGen = KeyGenerator.getInstance(algoritmo);
-		Cipher cipher = Cipher.getInstance(algoritmo);
-		cipher.init(Cipher.DECRYPT_MODE, llavePublica);
-		// Decrypt the ciphertext using the same key
-		byte[] newPlainText = cipher.doFinal(texto);
-		return new String(newPlainText, "UTF8");
-	}
-
+	
 	public static void main(String[] args) throws IOException {
 
 		boolean ejecutar = true;
@@ -180,8 +221,8 @@ public class Cliente {
 				algA = algoritmos[2];
 				hmac = algoritmos[3];
 				crearLlaves();
-
-				while (ejecutar) {
+				boolean nuevo = true;
+				while (ejecutar && nuevo) {
 					fromServer = lector.readLine();
 					if (fromServer.equals("ERROR")) {
 						System.out.println("se murio");
@@ -215,25 +256,52 @@ public class Cliente {
 						byte[] certificadoEnBytes = certificadoS.getEncoded();
 						String certificadoEnString = printByteArrayHexa(certificadoEnBytes);
 						System.out.println("Termina de generarlo");
+						escritor.println("OK");
+						escritor.flush();
 						// Se verifica la validez
-						try {
-							certificadoS.checkValidity();
-							System.out.println("El certificado es valido");
-							escritor.println("OK");
-							estado++;
-						} catch (Exception e) {
-							System.out.println("El certificado no es valido");
-							escritor.println("ERROR");
-						}
+//						try {
+//							certificadoS.checkValidity();
+//							System.out.println("El certificado es valido");
+//							escritor.println("OK");
+//							estado++;
+//						} catch (Exception e) {
+//							System.out.println("El certificado no es valido " + e.getCause() + " " + e.getMessage());
+//							escritor.println("ERROR");
+//							break;
+//						}
 						fromServer = lector.readLine();
 						//Se desencripta
-						String llavedescifrada = desencriptarConPKSC5(algS,algA,(DatatypeConverter.parseHexBinary(fromServer)));
-						//La llave se guarda como una SecretKey
-						SecretKey secreta = new SecretKeySpec(llavedescifrada.getBytes(), 0, llavedescifrada.length(), algS); 
-						String paraServ = encriptarConPKSC5(algS, algA, llavedescifrada.getBytes(), secreta);
-						paraServ = DatatypeConverter.printHexBinary(paraServ.getBytes());
-						escritor.println(paraServ);
+						System.out.println("Entra a desencriptar, guardar y luego encriptar");
+						String llavedescifrada = procesoAsimetrico(fromServer.getBytes(), algS, certificadoS.getPublicKey());
+						escritor.println(llavedescifrada);
+						//Recibe el mensaje y lo lee
+						//Obtiene el hmac del Mensaje
+						fromServer = lector.readLine();
+						if(!fromServer.equals("OK"))
+						{
+							System.out.println("Falló");
+							break;
+						}
+						fromUser = stdIn.readLine();
+						byte[] clearText = fromUser.getBytes();
+						byte[] cifrao;
+						byte[] macMesg;
+						Mac mac = Mac.getInstance(hmac);
+						mac.init(llaveSimetrica);
+						macMesg = mac.doFinal(fromUser.getBytes());
+						//Encripta y envía el mensaje
+						Cipher cipher = Cipher.getInstance(algS);
+						cipher.init(Cipher.ENCRYPT_MODE, llaveSimetrica);
+						cifrao = cipher.doFinal(clearText);
 						
+						fromServer = printByteArrayHexa(cifrao);
+						System.out.println(fromUser);
+						escritor.println(fromUser);
+						
+						//Envía el hash del mensaje
+						fromServer = printByteArrayHexa(macMesg);
+						escritor.println(fromUser);
+						nuevo = false;
 					}
 				}
 			}
@@ -256,5 +324,4 @@ public class Cliente {
 		System.out.println(out);
 		return out;
 	}
-
 }
