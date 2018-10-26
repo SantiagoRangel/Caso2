@@ -254,7 +254,6 @@ public class Cliente {
 						System.out.println("maybe se traba");
 						certificadoS = (X509Certificate) cf.generateCertificate(paraEsc);
 						byte[] certificadoEnBytes = certificadoS.getEncoded();
-						String certificadoEnString = printByteArrayHexa(certificadoEnBytes);
 						System.out.println("Termina de generarlo");
 						escritor.println("OK");
 						escritor.flush();
@@ -302,6 +301,8 @@ public class Cliente {
 						fromServer = printByteArrayHexa(macMesg);
 						escritor.println(fromUser);
 						nuevo = false;
+						fromServer = lector.readLine();
+						throw new Exception("Finaliza la comunicación");
 					}
 				}
 			}
