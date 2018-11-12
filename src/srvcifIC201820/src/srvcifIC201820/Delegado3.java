@@ -1,4 +1,4 @@
-package srvcifIC201820;
+package srvcifIC201820.src.srvcifIC201820;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

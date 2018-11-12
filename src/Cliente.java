@@ -58,9 +58,35 @@ public class Cliente {
 	private static SecretKeySpec llaveSimetrica;
 	private Date fecha;
 
-	public Cliente(BufferedReader br) {
+	/*
+	 * 400 carga 20 retardo
+	 * 200 carga 40 retardo
+	 * 80 carga 100 retardo 
+	 */
+	public static int NUMERO_CARGA = 80; 
+	public static int RETRASO= 100; 
+
+
+	/*
+	 *Modificar en el servidor también 
+	 */
+	public static int NUMERO_THREADS = 1; 
+
+	/*
+	 * SEGURO 
+	 * NOSEGURO
+	 */
+	public static String SEGURIDAD  = "NOSEGURO"; 
+
+
+	public Cliente() {
 
 	}
+
+	public Cliente(String seguridad) {
+		SEGURIDAD = seguridad;
+	}
+
 
 	// Creacion de llaves publica y privada
 	public static void crearLlaves() throws NoSuchAlgorithmException, NoSuchProviderException {
@@ -85,13 +111,13 @@ public class Cliente {
 		random.nextBytes(id);
 		BigInteger serial = new BigInteger(160, random);
 		Date startDate = Date.from(LocalDate.of(2000, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant()); // time from
-																										// which
-																										// certificate
-																										// is valid
+		// which
+		// certificate
+		// is valid
 		Date expiryDate = Date.from(LocalDate.of(2035, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant()); // time after
-																										// which
-																										// certificate
-																										// is not valid
+		// which
+		// certificate
+		// is not valid
 		BigInteger serialNumber = serial; // serial number for certificate
 		KeyPair keyPair = new KeyPair(llavePublica, llavePrivada); // EC public/private key pair
 		X509V1CertificateGenerator certGen = new X509V1CertificateGenerator();
@@ -113,72 +139,79 @@ public class Cliente {
 	 * bits y un texto Ej: AES, ECB, 128, bananana
 	 */
 
-//	public static String encriptarConPKSC5(String algoritmo, String metodo, byte[] texto, SecretKey llaveSecreta)throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-//			IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
-//		Cipher cipher = null;
-//		byte[] enByt = texto;
-//		if (algoritmo.equals("AES")) {
-//			cipher = Cipher.getInstance(algoritmo);
-//		} else {
-//			cipher = Cipher.getInstance(algoritmo);
-//		}
-//		cipher.init(Cipher.ENCRYPT_MODE, llaveSecreta);
-//		return new String(cipher.doFinal(enByt), "UTF8");
-//	}
-//
-//	/*
-//	 * Metodo para desencriptar dado un algoritmo, un metodo de encriptacion, tamaño
-//	 * en bits y una llave Ej: AES, ECB, 128, bananana
-//	 */
-//
-//	public static String desencriptarConPKSC5(String algoritmo, String metodo, byte[] texto, PublicKey llavePub) throws IllegalBlockSizeException, BadPaddingException,
-//			UnsupportedEncodingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException {
-//		Cipher cipher = null;
-//		if(algoritmo.equals("AES"))
-//		cipher = Cipher.getInstance("RSA/ECB/PKCS5Padding");
-//		else
-//		{
-//			cipher = Cipher.getInstance("RSA/CBC/PKCS5Padding");
-//		}
-//		
-//		cipher.init(Cipher.DECRYPT_MODE, llavePub);
-//		// Decrypt the ciphertext using the same key
-//		byte[] newPlainText = cipher.doFinal(texto);
-//		return new String(newPlainText, "UTF8");
-//	}
+	// public static String encriptarConPKSC5(String algoritmo, String metodo,
+	// byte[] texto, SecretKey llaveSecreta)throws NoSuchAlgorithmException,
+	// NoSuchPaddingException, InvalidKeyException,
+	// IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException
+	// {
+	// Cipher cipher = null;
+	// byte[] enByt = texto;
+	// if (algoritmo.equals("AES")) {
+	// cipher = Cipher.getInstance(algoritmo);
+	// } else {
+	// cipher = Cipher.getInstance(algoritmo);
+	// }
+	// cipher.init(Cipher.ENCRYPT_MODE, llaveSecreta);
+	// return new String(cipher.doFinal(enByt), "UTF8");
+	// }
+	//
+	// /*
+	// * Metodo para desencriptar dado un algoritmo, un metodo de encriptacion,
+	// tamaño
+	// * en bits y una llave Ej: AES, ECB, 128, bananana
+	// */
+	//
+	// public static String desencriptarConPKSC5(String algoritmo, String metodo,
+	// byte[] texto, PublicKey llavePub) throws IllegalBlockSizeException,
+	// BadPaddingException,
+	// UnsupportedEncodingException, InvalidKeyException, NoSuchAlgorithmException,
+	// NoSuchPaddingException {
+	// Cipher cipher = null;
+	// if(algoritmo.equals("AES"))
+	// cipher = Cipher.getInstance("RSA/ECB/PKCS5Padding");
+	// else
+	// {
+	// cipher = Cipher.getInstance("RSA/CBC/PKCS5Padding");
+	// }
+	//
+	// cipher.init(Cipher.DECRYPT_MODE, llavePub);
+	// // Decrypt the ciphertext using the same key
+	// byte[] newPlainText = cipher.doFinal(texto);
+	// return new String(newPlainText, "UTF8");
+	// }
 
 	// Cifrado Asimetrico
 
-		/*
-		 * Metodo para desencriptar dado un algoritmo, un metodo de encriptacion, tamaño
-		 * en bits y una llave Ej: AES, ECB, 128, bananana
-		 */
+	/*
+	 * Metodo para desencriptar dado un algoritmo, un metodo de encriptacion, tamaño
+	 * en bits y una llave Ej: AES, ECB, 128, bananana
+	 */
 
-		public static String procesoAsimetrico(byte[] texto, String algoritmo, PublicKey llavePub) throws IllegalBlockSizeException, BadPaddingException,
-				UnsupportedEncodingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException {
+	public static String procesoAsimetrico(byte[] texto, String algoritmo, PublicKey llavePub)
+			throws IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException, InvalidKeyException,
+			NoSuchAlgorithmException, NoSuchPaddingException {
 
-			try {
-				Cipher cifrador = Cipher.getInstance("RSA");
-				cifrador.init(Cipher.DECRYPT_MODE, llavePrivada);
-				
-				
-				byte[] decoded = cifrador.doFinal(Hex.decode(texto));
-				llaveSimetrica = new SecretKeySpec(decoded, 0, decoded.length, algoritmo); algoritmo += "/ECB/PKCS5Padding";
-				String testo = new String(decoded, "UTF8");
-				
-				cifrador.init(Cipher.ENCRYPT_MODE, llavePub);
-				byte[] cifrado = cifrador.doFinal(decoded);
-				String textox = printByteArrayHexa(cifrado);
-				return textox;
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			return null;
+		try {
+			Cipher cifrador = Cipher.getInstance("RSA");
+			cifrador.init(Cipher.DECRYPT_MODE, llavePrivada);
+
+			byte[] decoded = cifrador.doFinal(Hex.decode(texto));
+			llaveSimetrica = new SecretKeySpec(decoded, 0, decoded.length, algoritmo);
+			algoritmo += "/ECB/PKCS5Padding";
+			String testo = new String(decoded, "UTF8");
+
+			cifrador.init(Cipher.ENCRYPT_MODE, llavePub);
+			byte[] cifrado = cifrador.doFinal(decoded);
+			String textox = printByteArrayHexa(cifrado);
+			return textox;
+
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-	
-	public static void main(String[] args) throws IOException {
+		return null;
+	}
 
+	public void procesoConCifrado() {
 		boolean ejecutar = true;
 		Socket socket = null;
 		PrintWriter escritor = null;
@@ -189,7 +222,7 @@ public class Cliente {
 			escritor = new PrintWriter(socket.getOutputStream(), true);
 			lector = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-			Cliente2 c = new Cliente2(stdIn);
+			Cliente c = new Cliente();
 			String fromServer;
 			String fromUser;
 			System.out.print("Escriba el mensaje para enviar:");
@@ -242,15 +275,14 @@ public class Cliente {
 						System.out.println("Generando el certificado");
 						String s = lector.readLine();
 						System.out.println(s);
-						if(!s.equals("OK"))
-						{
+						if (!s.equals("OK")) {
 							System.out.println("No se mandó bien el certificado");
 							break;
 						}
 						System.out.println(s);
-						s=lector.readLine();
+						s = lector.readLine();
 						ByteArrayInputStream paraEsc = new ByteArrayInputStream(DatatypeConverter.parseHexBinary(s));
-						
+
 						System.out.println("maybe se traba");
 						certificadoS = (X509Certificate) cf.generateCertificate(paraEsc);
 						byte[] certificadoEnBytes = certificadoS.getEncoded();
@@ -258,26 +290,27 @@ public class Cliente {
 						escritor.println("OK");
 						escritor.flush();
 						// Se verifica la validez
-//						try {
-//							certificadoS.checkValidity();
-//							System.out.println("El certificado es valido");
-//							escritor.println("OK");
-//							estado++;
-//						} catch (Exception e) {
-//							System.out.println("El certificado no es valido " + e.getCause() + " " + e.getMessage());
-//							escritor.println("ERROR");
-//							break;
-//						}
+						// try {
+						// certificadoS.checkValidity();
+						// System.out.println("El certificado es valido");
+						// escritor.println("OK");
+						// estado++;
+						// } catch (Exception e) {
+						// System.out.println("El certificado no es valido " + e.getCause() + " " +
+						// e.getMessage());
+						// escritor.println("ERROR");
+						// break;
+						// }
 						fromServer = lector.readLine();
-						//Se desencripta
+						// Se desencripta
 						System.out.println("Entra a desencriptar, guardar y luego encriptar");
-						String llavedescifrada = procesoAsimetrico(fromServer.getBytes(), algS, certificadoS.getPublicKey());
+						String llavedescifrada = procesoAsimetrico(fromServer.getBytes(), algS,
+								certificadoS.getPublicKey());
 						escritor.println(llavedescifrada);
-						//Recibe el mensaje y lo lee
-						//Obtiene el hmac del Mensaje
+						// Recibe el mensaje y lo lee
+						// Obtiene el hmac del Mensaje
 						fromServer = lector.readLine();
-						if(!fromServer.equals("OK"))
-						{
+						if (!fromServer.equals("OK")) {
 							System.out.println("Falló");
 							break;
 						}
@@ -289,16 +322,16 @@ public class Cliente {
 						Mac mac = Mac.getInstance(hmac);
 						mac.init(llaveSimetrica);
 						macMesg = mac.doFinal(fromUser.getBytes());
-						//Encripta y envía el mensaje
+						// Encripta y envía el mensaje
 						Cipher cipher = Cipher.getInstance(algS);
 						cipher.init(Cipher.ENCRYPT_MODE, llaveSimetrica);
 						cifrao = cipher.doFinal(clearText);
-						
+
 						fromServer = printByteArrayHexa(cifrao);
 						System.out.println(fromUser);
 						escritor.println(fromUser);
-						
-						//Envía el hash del mensaje
+
+						// Envía el hash del mensaje
 						fromServer = printByteArrayHexa(macMesg);
 						escritor.println(fromUser);
 						nuevo = false;
@@ -312,6 +345,157 @@ public class Cliente {
 			System.err.println("Exception: " + e.getMessage());
 			System.exit(1);
 		}
+	}
+
+	public void procesoSinCifrado()
+	{
+
+		Socket socket = null;
+		PrintWriter escritor = null;
+		BufferedReader lector = null;
+		boolean ejecutar = true;
+
+		try {
+			socket = new Socket(HOST, PUERTO);
+			escritor = new PrintWriter(socket.getOutputStream(), true);
+			lector = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+			Cliente c = new Cliente();
+			String fromServer;
+			String fromUser;
+
+			String respuestaServer;
+
+			int estado = 0;
+
+			long startVer= 0; 
+
+
+			while (ejecutar) {
+				//respuestaServer = lector.readLine(); 
+				if (estado == 0) {
+					System.out.print("Escriba el mensaje para enviar:");
+
+					escritor.println(NUMERO_CARGA);
+					escritor.println("HOLA");
+
+					estado++; 
+				}else if(estado == 1 )
+				{
+					respuestaServer = lector.readLine(); 
+					if(respuestaServer.equalsIgnoreCase("OK"))
+					{
+						System.out.println("OK");
+
+						System.out.print("Escriba algoritmos para enviar:");
+
+						//Aqui mandar:ALGORITMOS:Blowfish:RSA:HMACMD5
+
+
+						escritor.println("ALGORITMOS:Blowfish:RSA:HMACMD5");
+
+
+
+						estado++; 
+					}else 
+					{
+						System.out.println(respuestaServer);
+						ejecutar = false;
+					}
+				}else if(estado == 2)
+				{
+					//Aqui mandar certificado
+					respuestaServer = lector.readLine(); 
+					System.out.println(respuestaServer);
+					if(respuestaServer.equalsIgnoreCase("OK"))
+					{
+						String certificadoEnString = "Certificado super seguro";
+						System.out.println("Mandar certificado cliente");
+						escritor.println(certificadoEnString);
+						estado++;
+
+					}else
+					{	
+						System.out.println(respuestaServer);
+						ejecutar= false;
+					}
+
+				}else if (estado == 3)
+				{
+					//RECIBIR CERTIFICADO
+
+					respuestaServer = lector.readLine(); 
+					System.out.println(respuestaServer);
+
+					if(respuestaServer.equalsIgnoreCase("OK"))
+					{
+						respuestaServer = lector.readLine(); 
+						System.out.println(respuestaServer);
+						System.out.println("Recibir certificado servidor");
+
+						escritor.println("OK");
+						//-------------------Se comienza la medida del monitor para el tiempo de verificación ---------
+						startVer = System.currentTimeMillis(); 
+						estado++;
+
+					}else
+					{
+						ejecutar= false;
+					}
+
+				}else if(estado == 4)
+				{
+					//Devolver la llave
+					System.out.println("Devolver la llave");
+					respuestaServer = lector.readLine(); 
+					escritor.println(respuestaServer);
+
+					estado++; 
+
+				}else if(estado == 5)
+				{
+					respuestaServer = lector.readLine(); 
+					System.out.println(respuestaServer);
+
+					//-------------------Se finaliza la medida del monitor para el tiempo de verificación ---------
+					long fin1 = System.currentTimeMillis(); 
+					long resta1 = fin1 - startVer; 
+
+					Monitor.addTiemposVerificacion(resta1);
+
+					System.out.println("Haga la consulta");
+
+
+					escritor.println("1234");
+					//-------------------Se comienza la medida del monitor para el tiempo de verificación ---------
+					long start = System.currentTimeMillis(); 
+
+					escritor.println("1234");
+
+					respuestaServer = lector.readLine(); 
+					System.out.println(respuestaServer);
+
+					//-------------------Termina la medida del monitor para el tiempo de verificación ---------
+					long fin = System.currentTimeMillis(); 
+
+					long resta = fin-start; 
+
+					Monitor.addTiemposConsulta(resta);
+
+					ejecutar= false;
+				}
+
+			}
+			escritor.close();
+			lector.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public static void main(String[] args) throws IOException {
 
 	}
 
