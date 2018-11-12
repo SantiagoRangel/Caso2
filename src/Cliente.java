@@ -281,6 +281,7 @@ public class Cliente {
 							System.out.println("Falló");
 							break;
 						}
+						System.out.println("Por favor ingrese la solicitud");
 						fromUser = stdIn.readLine();
 						byte[] clearText = fromUser.getBytes();
 						byte[] cifrao;
