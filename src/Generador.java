@@ -1,26 +1,24 @@
 import uniandes.gload.core.LoadGenerator;
 import uniandes.gload.core.Task;
 
-public class Generador {
-
-	private LoadGenerator generador;
+public class Generador 
+{
+	private LoadGenerator gen;
 
 	public Generador(int numberTasks, int gapBetween)
 	{
-		Task work = createTask();
-	
-		generador = new LoadGenerator("Cliente-Server" , numberTasks, work, gapBetween); 
-		generador.generate();
+		Task work = createTask();	
+		gen = new LoadGenerator("Cliente-Server" , numberTasks, work, gapBetween); 
+		gen.generate();
 	}
 
-	public void comenzar() {
-
-		generador.generate();
+	public void comenzar() 
+	{
+		gen.generate();
 	}
 
-	public Task createTask() {
-
+	public Task createTask() 
+	{
 		return new ClienteTask();
 	}
-
 }
