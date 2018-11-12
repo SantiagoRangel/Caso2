@@ -67,7 +67,7 @@ public class Cliente {
 	public static int RETRASO = 100;
 
 	/*
-	 * Modificar en el servidor también
+	 * Para modificar el pool toca cambiarlo acá y en el servidor
 	 */
 	public static int NUMERO_THREADS = 1;
 
@@ -222,7 +222,7 @@ public class Cliente {
 			String fromServer;
 			String fromUser;
 			System.out.print("Escriba el mensaje para enviar:");
-			fromUser = stdIn.readLine();
+			fromUser = "HOLA";
 			escritor.println(fromUser);
 			int estado = 0;
 			String[] algoritmos;
@@ -239,7 +239,7 @@ public class Cliente {
 					break;
 				}
 				System.out.print("Escriba los algoritmos");
-				fromUser = stdIn.readLine();
+				fromUser = "ALGORITMOS:AES:RSA:HMACMD5";
 				escritor.println(fromUser);
 				if (!fromUser.contains("ALGORITMOS")) {
 					System.out.println("No contiene algoritmos");
@@ -311,7 +311,7 @@ public class Cliente {
 							break;
 						}
 						System.out.println("Por favor ingrese la solicitud");
-						fromUser = stdIn.readLine();
+						fromUser = "1234";
 						byte[] clearText = fromUser.getBytes();
 						byte[] cifrao;
 						byte[] macMesg;
@@ -320,7 +320,7 @@ public class Cliente {
 						macMesg = mac.doFinal(fromUser.getBytes());
 						// Encripta y envía el mensaje
 						Cipher cipher = Cipher.getInstance(algS);
-						cipher.init(Cipher.ENCRYPT_MODE, llaveSimetrica);
+						cipher.init(Cipher.ENCRYPT_MODE, certificadoS.getPublicKey());
 						cifrao = cipher.doFinal(clearText);
 
 						fromServer = printByteArrayHexa(cifrao);
@@ -367,7 +367,7 @@ public class Cliente {
 				System.out.print("Escriba el mensaje para enviar:");
 
 				escritor.println(NUMERO_CARGA);
-				fromUser = stdIn.readLine();
+				fromUser = "HOLA";
 				escritor.println(fromUser);
 
 				estado++;
@@ -378,7 +378,7 @@ public class Cliente {
 
 					System.out.print("Escriba algoritmos para enviar:");
 
-					fromUser = stdIn.readLine();
+					fromUser = "ALGORITMOS:AES:RSA:HMACMD5";
 
 					escritor.println(fromUser);
 					estado++;
@@ -439,7 +439,7 @@ public class Cliente {
 
 				System.out.println("Haga la consulta");
 
-				fromUser = stdIn.readLine();
+				fromUser = "1234";
 
 				escritor.println(fromUser);
 				// -------------------Se comienza la medida del monitor para el tiempo de
@@ -520,7 +520,7 @@ public class Cliente {
 			writerConsul = new PrintWriter(
 					path + File.separator + "data" + File.separator + nombreArchivoConsul);
 		} catch (Exception e) {
-
+			e.printStackTrace();
 		}
 		writerVerificacion.println("sep=,");
 		writerConsul.println("sep=,");
