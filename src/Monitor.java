@@ -11,7 +11,7 @@ public class Monitor extends Thread
 	private static ArrayList<Long> tiemposVerificacion = new ArrayList<>();
 	private static ArrayList<Long> tiemposConsulta = new ArrayList<>();
 	
-	private long startVer; 
+	private long inicVer; 
 	private long startConsu;
 	private double memoria;	
 	private boolean terminado;
@@ -31,41 +31,36 @@ public class Monitor extends Thread
 	
 	public void comenzar()
 	{
-		startVer = System.currentTimeMillis(); 
-		System.out.println("Tiempo start " + startVer);
+		inicVer = System.currentTimeMillis(); 
+		System.out.println("Inicio: " + inicVer);
 	}	
 	
 	public long endVer()
-	{			
-		long fin = System.currentTimeMillis(); 
-		long resta = fin-startVer; 		
-		System.out.println("Tiempo fin " + fin );		
-		System.out.println("Tiempo resta ver "+ resta);
+	{			 
+		long tiempo = System.currentTimeMillis()-inicVer;		
+		System.out.println("Se demoro: "+ tiempo + " milisegundos en Verificar");
 		synchronized (this) 
 		{					
-			tiemposVerificacion.add(resta);			
+			tiemposVerificacion.add(tiempo);			
 		}		
-		return fin - startVer; 
+		return tiempo; 
 	}
 	
 	public long endConsu()
 	{			
-		long fin = System.currentTimeMillis(); 
-		long resta = fin-startVer; 		
-		System.out.println("Tiempo fin consul "+ resta);
+		long tiempo = System.currentTimeMillis()-inicVer; 		
+		System.out.println("Se demoro: "+ tiempo + " milisegundos en Consultar");
 		synchronized (this) 
 		{
-				tiemposConsulta.add(resta);
+				tiemposConsulta.add(tiempo);
 		}		
-		return fin - startVer; 
-	}
+		return tiempo; 
+	}	
 	
-	
-	public synchronized void addConsulta(long consulta)
+	public synchronized void addConsulta(long cons)
 	{
-		tiemposConsulta.add(consulta);
-	}
-	
+		tiemposConsulta.add(cons);
+	}	
 	
 	public synchronized void addVer(long ver)
 	{
@@ -88,25 +83,23 @@ public class Monitor extends Thread
 	
 	public static double getTiemposDeVerificacionPromedio()
 	{
-		double suma = 0.0; 		
-		for (Long long1 : tiemposVerificacion) 
+		double prom = 0; 		
+		for (Long ver : tiemposVerificacion) 
 		{
-			suma += (double)long1;
+			prom += (double)(ver/tiemposVerificacion.size());
 		}	
-		System.out.println("Suma = " + suma);
-		System.out.println("Tamaño = " + tiemposVerificacion.size());		
-		double tamanio = (double)tiemposVerificacion.size();		
-		return suma/tamanio ; 		
+		System.out.println("Promedio: " + prom + " milisegundos");		
+		return prom ; 		
 	}
 	
-	public synchronized static void addTiemposVerificacion(long valor)
+	public synchronized static void addTiemposVerificacion(long x)
 	{
-		tiemposVerificacion.add(valor); 
+		tiemposVerificacion.add(x); 
 	}
 	
-	public synchronized static void addTiemposConsulta(long valor)
+	public synchronized static void addTiemposConsulta(long x)
 	{
-		tiemposConsulta.add(valor); 
+		tiemposConsulta.add(x); 
 	}	
 	
 	public static ArrayList<Long> getTiemposVerificacion()
@@ -131,12 +124,12 @@ public class Monitor extends Thread
 	
 	public static double getTiemposDeConsultaPromedio()
 	{
-		double suma = 0L; 		
-		for (Long long1 : tiemposConsulta) 
+		double prom = 0; 		
+		for (Long cons : tiemposConsulta) 
 		{
-			suma += long1;
+			prom += (double)(cons/tiemposConsulta.size());
 		}		
-		return suma/(double)tiemposConsulta.size(); 		
+		return prom; 		
 	}
 	
 	public boolean getTermino()
@@ -147,21 +140,20 @@ public class Monitor extends Thread
 	@Override
 	public void run()
 	{
-		long start = System.currentTimeMillis(); 
-		System.out.println("start " + caso +  "= " + start);
+		long start = System.currentTimeMillis();
 		try 
 		{
 			synchronized (this) 
 			{				
 				wait();
-				System.out.println(caso + " after wait");
+				System.out.println("paso: " + caso);
 			}			
 		} 
 		catch (InterruptedException e) 
 		{
 			e.printStackTrace();
 		} 
-		long fin = System.currentTimeMillis() - 10;
+		long fin = System.currentTimeMillis();
 		System.out.println("fin " + caso + "= " + fin );
 		long resta = fin-start;
 		System.out.println("RESTA "+ caso + "= " + resta );		
