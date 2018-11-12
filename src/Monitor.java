@@ -146,12 +146,12 @@ public class Monitor extends Thread{
 	
 	public static void reiniciarArrayListVer()
 	{
-		tiemposVerificacion.clear(); 
+		tiemposVerificacion = new ArrayList<Long>(); 
 	}
 	
 	public static void reiniciarArrayListConsu()
 	{
-		tiemposConsulta.clear(); 
+		tiemposConsulta = new ArrayList<Long>(); 
 	}
 	
 	public static double getTiemposDeConsultaPromedio()
@@ -165,8 +165,6 @@ public class Monitor extends Thread{
 		return suma/(double)tiemposConsulta.size(); 
 		
 	}
-	
-	
 	
 	public boolean getTermino()
 	{

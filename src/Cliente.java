@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.Socket;
@@ -14,6 +15,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Random;
 
@@ -59,25 +61,20 @@ public class Cliente {
 	private Date fecha;
 
 	/*
-	 * 400 carga 20 retardo
-	 * 200 carga 40 retardo
-	 * 80 carga 100 retardo 
+	 * 400 carga 20 retardo 200 carga 40 retardo 80 carga 100 retardo
 	 */
-	public static int NUMERO_CARGA = 80; 
-	public static int RETRASO= 100; 
-
+	public static int NUMERO_CARGA = 80;
+	public static int RETRASO = 100;
 
 	/*
-	 *Modificar en el servidor también 
+	 * Modificar en el servidor también
 	 */
-	public static int NUMERO_THREADS = 1; 
+	public static int NUMERO_THREADS = 1;
 
 	/*
-	 * SEGURO 
-	 * NOSEGURO
+	 * SEGURO NOSEGURO
 	 */
-	public static String SEGURIDAD  = "NOSEGURO"; 
-
+	public static String SEGURIDAD = "NOSEGURO";
 
 	public Cliente() {
 
@@ -86,7 +83,6 @@ public class Cliente {
 	public Cliente(String seguridad) {
 		SEGURIDAD = seguridad;
 	}
-
 
 	// Creacion de llaves publica y privada
 	public static void crearLlaves() throws NoSuchAlgorithmException, NoSuchProviderException {
@@ -211,7 +207,7 @@ public class Cliente {
 		return null;
 	}
 
-	public void procesoConCifrado() {
+	public static void procesoConCifrado() {
 		boolean ejecutar = true;
 		Socket socket = null;
 		PrintWriter escritor = null;
@@ -347,13 +343,11 @@ public class Cliente {
 		}
 	}
 
-	public void procesoSinCifrado()
-	{
+	public static void procesoSinCifrado() {
 
 		Socket socket = null;
 		PrintWriter escritor = null;
 		BufferedReader lector = null;
-		boolean ejecutar = true;
 
 		try {
 			socket = new Socket(HOST, PUERTO);
@@ -364,138 +358,214 @@ public class Cliente {
 			String fromServer;
 			String fromUser;
 
-			String respuestaServer;
-
 			int estado = 0;
 
-			long startVer= 0; 
+			long startVer = 0;
 
+			// fromServer = lector.readLine();
+			if (estado == 0) {
+				System.out.print("Escriba el mensaje para enviar:");
 
-			while (ejecutar) {
-				//respuestaServer = lector.readLine(); 
-				if (estado == 0) {
-					System.out.print("Escriba el mensaje para enviar:");
+				escritor.println(NUMERO_CARGA);
+				fromUser = stdIn.readLine();
+				escritor.println(fromUser);
 
-					escritor.println(NUMERO_CARGA);
-					escritor.println("HOLA");
+				estado++;
+			} else if (estado == 1) {
+				fromServer = lector.readLine();
+				if (fromServer.equalsIgnoreCase("OK")) {
+					System.out.println("OK");
 
-					estado++; 
-				}else if(estado == 1 )
-				{
-					respuestaServer = lector.readLine(); 
-					if(respuestaServer.equalsIgnoreCase("OK"))
-					{
-						System.out.println("OK");
+					System.out.print("Escriba algoritmos para enviar:");
 
-						System.out.print("Escriba algoritmos para enviar:");
+					fromUser = stdIn.readLine();
 
-						//Aqui mandar:ALGORITMOS:Blowfish:RSA:HMACMD5
+					escritor.println(fromUser);
+					estado++;
+				} else {
+					System.out.println(fromServer);
+				}
+			} else if (estado == 2) {
+				// Se manda el certificado
+				fromServer = lector.readLine();
+				System.out.println(fromServer);
+				if (fromServer.equalsIgnoreCase("OK")) {
+					String certificadoEnString = "Certificado super seguro";
+					System.out.println("Mandar certificado cliente");
 
+					escritor.println(certificadoEnString);
+					estado++;
 
-						escritor.println("ALGORITMOS:Blowfish:RSA:HMACMD5");
-
-
-
-						estado++; 
-					}else 
-					{
-						System.out.println(respuestaServer);
-						ejecutar = false;
-					}
-				}else if(estado == 2)
-				{
-					//Aqui mandar certificado
-					respuestaServer = lector.readLine(); 
-					System.out.println(respuestaServer);
-					if(respuestaServer.equalsIgnoreCase("OK"))
-					{
-						String certificadoEnString = "Certificado super seguro";
-						System.out.println("Mandar certificado cliente");
-						escritor.println(certificadoEnString);
-						estado++;
-
-					}else
-					{	
-						System.out.println(respuestaServer);
-						ejecutar= false;
-					}
-
-				}else if (estado == 3)
-				{
-					//RECIBIR CERTIFICADO
-
-					respuestaServer = lector.readLine(); 
-					System.out.println(respuestaServer);
-
-					if(respuestaServer.equalsIgnoreCase("OK"))
-					{
-						respuestaServer = lector.readLine(); 
-						System.out.println(respuestaServer);
-						System.out.println("Recibir certificado servidor");
-
-						escritor.println("OK");
-						//-------------------Se comienza la medida del monitor para el tiempo de verificación ---------
-						startVer = System.currentTimeMillis(); 
-						estado++;
-
-					}else
-					{
-						ejecutar= false;
-					}
-
-				}else if(estado == 4)
-				{
-					//Devolver la llave
-					System.out.println("Devolver la llave");
-					respuestaServer = lector.readLine(); 
-					escritor.println(respuestaServer);
-
-					estado++; 
-
-				}else if(estado == 5)
-				{
-					respuestaServer = lector.readLine(); 
-					System.out.println(respuestaServer);
-
-					//-------------------Se finaliza la medida del monitor para el tiempo de verificación ---------
-					long fin1 = System.currentTimeMillis(); 
-					long resta1 = fin1 - startVer; 
-
-					Monitor.addTiemposVerificacion(resta1);
-
-					System.out.println("Haga la consulta");
-
-
-					escritor.println("1234");
-					//-------------------Se comienza la medida del monitor para el tiempo de verificación ---------
-					long start = System.currentTimeMillis(); 
-
-					escritor.println("1234");
-
-					respuestaServer = lector.readLine(); 
-					System.out.println(respuestaServer);
-
-					//-------------------Termina la medida del monitor para el tiempo de verificación ---------
-					long fin = System.currentTimeMillis(); 
-
-					long resta = fin-start; 
-
-					Monitor.addTiemposConsulta(resta);
-
-					ejecutar= false;
+				} else {
+					System.out.println(fromServer);
 				}
 
+			} else if (estado == 3) {
+				// Recibe el certificado
+
+				fromServer = lector.readLine();
+				System.out.println(fromServer);
+
+				if (fromServer.equalsIgnoreCase("OK")) {
+					fromServer = lector.readLine();
+					System.out.println(fromServer);
+					System.out.println("Recibir certificado servidor");
+
+					escritor.println("OK");
+					// -------------------Se comienza la medida del monitor para el tiempo de
+					// verificación ---------
+					startVer = System.currentTimeMillis();
+					estado++;
+				}
+
+			} else if (estado == 4) {
+				// Devolver la llave
+				System.out.println("Devolver la llave");
+				fromServer = lector.readLine();
+				escritor.println(fromServer);
+
+				estado++;
+
+			} else if (estado == 5) {
+				fromServer = lector.readLine();
+				System.out.println(fromServer);
+
+				// -------------------Se finaliza la medida del monitor para el tiempo de
+				// verificación ---------
+				long fin1 = System.currentTimeMillis();
+				long resta1 = fin1 - startVer;
+
+				Monitor.addTiemposVerificacion(resta1);
+
+				System.out.println("Haga la consulta");
+
+				fromUser = stdIn.readLine();
+
+				escritor.println(fromUser);
+				// -------------------Se comienza la medida del monitor para el tiempo de
+				// verificación ---------
+				long start = System.currentTimeMillis();
+
+				escritor.println("1234");
+
+				fromServer = lector.readLine();
+				System.out.println(fromServer);
+
+				// -------------------Termina la medida del monitor para el tiempo de
+				// verificación ---------
+				long fin = System.currentTimeMillis();
+
+				long resta = fin - start;
+
+				Monitor.addTiemposConsulta(resta);
 			}
+
 			escritor.close();
 			lector.close();
-		}
-		catch(Exception e)
-		{
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 	public static void main(String[] args) throws IOException {
+
+		Monitor monitor1 = new Monitor("verificacion");
+		Monitor monitor2 = new Monitor("consulta");
+
+		// String respuesta = stdIn.readLine();
+		// TODO Cambiar por el parametro despues de probar
+		if (SEGURIDAD.equals("NOSEGURO")) {
+			System.out.println("Protocolo no seguro");
+			procesoSinCifrado();
+
+		} else if (SEGURIDAD.equals("SEGURO")) {
+			System.out.println("Protocolo seguro");
+			procesoConCifrado();
+
+		}
+
+		// Cliente c = new Cliente("SEGURO");
+
+		ArrayList<ArrayList<Long>> listasVer = new ArrayList<>();
+		ArrayList<ArrayList<Long>> listasConsul = new ArrayList<>();
+
+		for (int i = 0; i < 10; i++) {
+
+			Generador gen = new Generador(Cliente.NUMERO_CARGA, Cliente.RETRASO);
+			ArrayList<Long> listaVerTemp = Monitor.getTiemposVerificacion();
+			ArrayList<Long> listaConsulTemp = Monitor.getTiemposConsulta();
+
+			listasVer.add(listaVerTemp);
+			listasConsul.add( listaConsulTemp);
+
+			Monitor.reiniciarArrayListVer();
+			Monitor.reiniciarArrayListConsu();
+		}
+		String path = System.getProperty("user.dir");
+
+		/*
+		 * SEGURO|NOSEGURO-carga-#threads
+		 * 
+		 */
+		String pruebaActual = Cliente.SEGURIDAD + "-" + Cliente.NUMERO_CARGA + "-" + Cliente.NUMERO_THREADS;
+
+		String nombreArchivoVer = "verificaciones-" + pruebaActual + ".csv";
+		String nombreArchivoConsul = "consultas-" + pruebaActual + ".csv";
+
+		PrintWriter writerVerificacion = null;
+		PrintWriter writerConsul = null;
+		try {
+			writerVerificacion = new PrintWriter(
+					path + File.separator + "data" + File.separator + nombreArchivoVer);
+			writerConsul = new PrintWriter(
+					path + File.separator + "data" + File.separator + nombreArchivoConsul);
+		} catch (Exception e) {
+
+		}
+		writerVerificacion.println("sep=,");
+		writerConsul.println("sep=,");
+
+		// Imprime la información
+		for (ArrayList<Long> arrayList : listasVer) {
+
+			ArrayList<Long> datos = arrayList;
+			StringBuilder builderVer = new StringBuilder();
+
+			for (int i = 0; i < datos.size(); i++) {
+				if (i != datos.size() - 1) {
+					builderVer.append(datos.get(i) + ",");
+					System.out.println("Entra " + datos.get(i));
+				} else {
+					builderVer.append(datos.get(i));
+				}
+			}
+
+			writerVerificacion.println(builderVer.toString());
+
+		}
+		for (ArrayList<Long> arrayList2 : listasConsul) {
+
+			StringBuilder builder2 = new StringBuilder();
+			ArrayList<Long> datos2 = arrayList2;
+
+			for (int i = 0; i < datos2.size(); i++) {
+				if (i != datos2.size() - 1) {
+					builder2.append(datos2.get(i) + ",");
+					System.out.println("Entra " + datos2.get(i));
+				} else {
+					builder2.append(datos2.get(i));
+				}
+
+			}
+			writerConsul.println(builder2.toString());
+		}
+
+		System.out.println("acaba de verificar");
+
+		writerVerificacion.close();
+		writerConsul.close();
+
+		System.out.println("Tiempo verificacion " + Monitor.getTiemposDeVerificacionPromedio());
 
 	}
 
