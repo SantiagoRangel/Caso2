@@ -23,17 +23,48 @@ public class Monitor extends Thread
 		terminado = false; 
 	}
 	
-	public void termino(String pCaso)
+	@Override
+	public void run()
 	{
+		long start = System.currentTimeMillis();
+		try 
+		{
+			synchronized (this) 
+			{				
+				wait();
+				System.out.println("paso: " + caso);
+			}			
+		} 
+		catch (InterruptedException e) 
+		{
+			e.printStackTrace();
+		} 
+		long tiempo = System.currentTimeMillis()-start;
+		System.out.println("se demoro "+ tiempo + " milisegundos en " + caso );		
+		if(caso.equals("verificacion"))
+		{
+			addVer(tiempo);
+		}
+		else if(caso.equals("consulta")) 
+		{
+			addConsulta(tiempo);
+		}		
 		terminado = true; 
-		caso= pCaso;		
+	}		
+
+	public double getSystemCpuLoad() throws Exception 
+	{				
+		 MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+		 ObjectName name = ObjectName.getInstance("java.lang:type=OperatingSystem");
+		 AttributeList list = mbs.getAttributes(name, new String[]{ "SystemCpuLoad" });
+		 if (list.isEmpty()) return Double.NaN;
+		 Attribute att = (Attribute)list.get(0);
+		 Double value = (Double)att.getValue();
+		 // usually takes a couple of seconds before we get real values
+		 if (value == -1.0) return Double.NaN;
+		 // returns a percentage value with 1 decimal point precision
+		 return ((int)(value * 1000) / 10.0);
 	}
-	
-	public void comenzar()
-	{
-		inicVer = System.currentTimeMillis(); 
-		System.out.println("Inicio: " + inicVer);
-	}	
 	
 	public long endVer()
 	{			 
@@ -55,31 +86,17 @@ public class Monitor extends Thread
 				tiemposConsulta.add(tiempo);
 		}		
 		return tiempo; 
-	}	
-	
-	public synchronized void addConsulta(long cons)
-	{
-		tiemposConsulta.add(cons);
-	}	
-	
-	public synchronized void addVer(long ver)
-	{
-		tiemposVerificacion.add(ver);
 	}
 	
-	public double getSystemCpuLoad() throws Exception 
-	{				
-		 MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-		 ObjectName name = ObjectName.getInstance("java.lang:type=OperatingSystem");
-		 AttributeList list = mbs.getAttributes(name, new String[]{ "SystemCpuLoad" });
-		 if (list.isEmpty()) return Double.NaN;
-		 Attribute att = (Attribute)list.get(0);
-		 Double value = (Double)att.getValue();
-		 // usually takes a couple of seconds before we get real values
-		 if (value == -1.0) return Double.NaN;
-		 // returns a percentage value with 1 decimal point precision
-		 return ((int)(value * 1000) / 10.0);
-	}
+	public static double getTiemposDeConsultaPromedio()
+	{
+		double prom = 0; 		
+		for (Long cons : tiemposConsulta) 
+		{
+			prom += (double)(cons/tiemposConsulta.size());
+		}		
+		return prom; 		
+	}	
 	
 	public static double getTiemposDeVerificacionPromedio()
 	{
@@ -90,6 +107,28 @@ public class Monitor extends Thread
 		}	
 		System.out.println("Promedio: " + prom + " milisegundos");		
 		return prom ; 		
+	}
+	
+	public void termino(String pCaso)
+	{
+		terminado = true; 
+		caso= pCaso;		
+	}
+	
+	public void comenzar()
+	{
+		inicVer = System.currentTimeMillis(); 
+		System.out.println("Inicio: " + inicVer);
+	}	
+	
+	public synchronized void addConsulta(long cons)
+	{
+		tiemposConsulta.add(cons);
+	}	
+	
+	public synchronized void addVer(long ver)
+	{
+		tiemposVerificacion.add(ver);
 	}
 	
 	public synchronized static void addTiemposVerificacion(long x)
@@ -122,49 +161,8 @@ public class Monitor extends Thread
 		tiemposConsulta = new ArrayList<Long>(); 
 	}
 	
-	public static double getTiemposDeConsultaPromedio()
-	{
-		double prom = 0; 		
-		for (Long cons : tiemposConsulta) 
-		{
-			prom += (double)(cons/tiemposConsulta.size());
-		}		
-		return prom; 		
-	}
-	
 	public boolean getTermino()
 	{
 		return terminado; 
 	}
-	
-	@Override
-	public void run()
-	{
-		long start = System.currentTimeMillis();
-		try 
-		{
-			synchronized (this) 
-			{				
-				wait();
-				System.out.println("paso: " + caso);
-			}			
-		} 
-		catch (InterruptedException e) 
-		{
-			e.printStackTrace();
-		} 
-		long fin = System.currentTimeMillis();
-		System.out.println("fin " + caso + "= " + fin );
-		long resta = fin-start;
-		System.out.println("RESTA "+ caso + "= " + resta );		
-		if(caso.equals("verificacion"))
-		{
-			addVer(resta);
-		}
-		else if(caso.equals("consulta")) 
-		{
-			addConsulta(resta);
-		}		
-		terminado = true; 
-	}	
 }
