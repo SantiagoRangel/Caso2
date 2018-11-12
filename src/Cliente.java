@@ -75,6 +75,10 @@ public class Cliente {
 	 * SEGURO NOSEGURO
 	 */
 	public static String SEGURIDAD = "NOSEGURO";
+	
+	
+	private static Monitor monitor1;
+	private static Monitor monitor2;
 
 	public Cliente() {
 
@@ -311,28 +315,47 @@ public class Cliente {
 							break;
 						}
 						System.out.println("Por favor ingrese la solicitud");
-						fromUser = "1234";
+						fromUser = "12345";
 						byte[] clearText = fromUser.getBytes();
 						byte[] cifrao;
 						byte[] macMesg;
-						Mac mac = Mac.getInstance(hmac);
-						mac.init(llaveSimetrica);
-						macMesg = mac.doFinal(fromUser.getBytes());
+						System.out.println("AFTERMAC");
 						// Encripta y envía el mensaje
 						Cipher cipher = Cipher.getInstance(algS);
-						cipher.init(Cipher.ENCRYPT_MODE, certificadoS.getPublicKey());
+						cipher.init(Cipher.ENCRYPT_MODE, llaveSimetrica);
 						cifrao = cipher.doFinal(clearText);
+						String rta1 = bytesToHex(cifrao);
+						//HMAC
+						
+						Mac mac = Mac.getInstance(hmac);
+						mac.init(llaveSimetrica);
+						macMesg = mac.doFinal(cifrao);
+						String rta2 = bytesToHex(macMesg);
+						
+						System.out.println("AFTERENCRI");
 
-						fromServer = printByteArrayHexa(cifrao);
+						fromUser = rta1;
 						System.out.println(fromUser);
 						escritor.println(fromUser);
-
+						
 						// Envía el hash del mensaje
-						fromServer = printByteArrayHexa(macMesg);
 						escritor.println(fromUser);
 						nuevo = false;
 						fromServer = lector.readLine();
-						throw new Exception("Finaliza la comunicación");
+						
+						try {
+							Thread.sleep(10);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						
+						synchronized (monitor2) {
+							//System.out.println("Se supone que notifica 2");
+							monitor2.notifyAll();
+					
+						}
+						
+						System.out.println("Finaliza la comunicacion");
 					}
 				}
 			}
@@ -366,12 +389,12 @@ public class Cliente {
 			if (estado == 0) {
 				System.out.print("Escriba el mensaje para enviar:");
 
-				escritor.println(NUMERO_CARGA);
+				//escritor.println(NUMERO_CARGA);
 				fromUser = "HOLA";
 				escritor.println(fromUser);
 
 				estado++;
-			} else if (estado == 1) {
+			} if (estado == 1) {
 				fromServer = lector.readLine();
 				if (fromServer.equalsIgnoreCase("OK")) {
 					System.out.println("OK");
@@ -385,7 +408,7 @@ public class Cliente {
 				} else {
 					System.out.println(fromServer);
 				}
-			} else if (estado == 2) {
+			} if (estado == 2) {
 				// Se manda el certificado
 				fromServer = lector.readLine();
 				System.out.println(fromServer);
@@ -400,7 +423,7 @@ public class Cliente {
 					System.out.println(fromServer);
 				}
 
-			} else if (estado == 3) {
+			} if (estado == 3) {
 				// Recibe el certificado
 
 				fromServer = lector.readLine();
@@ -418,7 +441,7 @@ public class Cliente {
 					estado++;
 				}
 
-			} else if (estado == 4) {
+			} if (estado == 4) {
 				// Devolver la llave
 				System.out.println("Devolver la llave");
 				fromServer = lector.readLine();
@@ -426,7 +449,7 @@ public class Cliente {
 
 				estado++;
 
-			} else if (estado == 5) {
+			} if (estado == 5) {
 				fromServer = lector.readLine();
 				System.out.println(fromServer);
 
@@ -469,16 +492,19 @@ public class Cliente {
 
 	public static void main(String[] args) throws IOException {
 
-		Monitor monitor1 = new Monitor("verificacion");
-		Monitor monitor2 = new Monitor("consulta");
+		monitor1 = new Monitor("verificacion");
+		monitor2 = new Monitor("consulta");
 
+		
+		Cliente cliente = new Cliente("SEGURO");
+		
 		// String respuesta = stdIn.readLine();
 		// TODO Cambiar por el parametro despues de probar
-		if (SEGURIDAD.equals("NOSEGURO")) {
+		if (cliente.SEGURIDAD.equals("NOSEGURO")) {
 			System.out.println("Protocolo no seguro");
 			procesoSinCifrado();
 
-		} else if (SEGURIDAD.equals("SEGURO")) {
+		} else if (cliente.SEGURIDAD.equals("SEGURO")) {
 			System.out.println("Protocolo seguro");
 			procesoConCifrado();
 
@@ -580,4 +606,18 @@ public class Cliente {
 		System.out.println(out);
 		return out;
 	}
+	
+	public static String bytesToHex(byte[] bytes) {
+		
+		char[] hexArray = "0123456789ABCDEF".toCharArray();
+		char[] hexChars = new char[bytes.length * 2];
+		for ( int j = 0; j < bytes.length; j++ ) {
+			int v = bytes[j] & 0xFF;
+			hexChars[j * 2] = hexArray[v >>> 4];
+			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+		}
+		return new String(hexChars);
+	}
+
+	
 }
