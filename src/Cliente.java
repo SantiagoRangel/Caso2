@@ -472,13 +472,16 @@ public class Cliente {
 		Monitor monitor1 = new Monitor("verificacion");
 		Monitor monitor2 = new Monitor("consulta");
 
+		
+		Cliente cliente = new Cliente("SEGURO");
+		
 		// String respuesta = stdIn.readLine();
 		// TODO Cambiar por el parametro despues de probar
-		if (SEGURIDAD.equals("NOSEGURO")) {
+		if (cliente.SEGURIDAD.equals("NOSEGURO")) {
 			System.out.println("Protocolo no seguro");
 			procesoSinCifrado();
 
-		} else if (SEGURIDAD.equals("SEGURO")) {
+		} else if (cliente.SEGURIDAD.equals("SEGURO")) {
 			System.out.println("Protocolo seguro");
 			procesoConCifrado();
 
