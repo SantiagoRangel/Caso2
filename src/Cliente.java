@@ -207,380 +207,371 @@ public class Cliente {
 		return null;
 	}
 
-	public static void procesoConCifrado() {
+	public static void procesoConCifrado() throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, NoSuchProviderException, IllegalStateException, SignatureException, OperatorCreationException, CertificateException {
 		boolean ejecutar = true;
 		Socket socket = null;
 		PrintWriter escritor = null;
 		BufferedReader lector = null;
 
-		try {
-			socket = new Socket(HOST, PUERTO);
-			escritor = new PrintWriter(socket.getOutputStream(), true);
-			lector = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-			Cliente c = new Cliente();
-			String fromServer;
-			String fromUser;
-			System.out.print("Escriba el mensaje para enviar:");
-			fromUser = "HOLA";
+		socket = new Socket(HOST, PUERTO);
+		escritor = new PrintWriter(socket.getOutputStream(), true);
+		lector = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+		Cliente c = new Cliente();
+		String fromServer;
+		String fromUser;
+		System.out.print("Escriba el mensaje para enviar:");
+		fromUser = "HOLA";
+		escritor.println(fromUser);
+		int estado = 0;
+		String[] algoritmos;
+		String algS;
+		String algA;
+		String hmac;
+		X509Certificate certificadoS;
+		while (ejecutar && fromUser != null) {
+
+			fromServer = lector.readLine();
+			System.out.println(fromServer);
+			if (fromServer.equals("ERROR")) {
+				System.out.println("ERROR");
+				break;
+			}
+			System.out.print("Escriba los algoritmos");
+			fromUser = "ALGORITMOS:AES:RSA:HMACMD5";
 			escritor.println(fromUser);
-			int estado = 0;
-			String[] algoritmos;
-			String algS;
-			String algA;
-			String hmac;
-			X509Certificate certificadoS;
-			while (ejecutar && fromUser != null) {
-
+			if (!fromUser.contains("ALGORITMOS")) {
+				System.out.println("No contiene algoritmos");
+				break;
+			}
+			algoritmos = fromUser.split(":");
+			algS = algoritmos[1];
+			algA = algoritmos[2];
+			hmac = algoritmos[3];
+			crearLlaves();
+			boolean nuevo = true;
+			while (ejecutar && nuevo) {
 				fromServer = lector.readLine();
-				System.out.println(fromServer);
 				if (fromServer.equals("ERROR")) {
-					System.out.println("ERROR");
+					System.out.println("se murio");
 					break;
-				}
-				System.out.print("Escriba los algoritmos");
-				fromUser = "ALGORITMOS:AES:RSA:HMACMD5";
-				escritor.println(fromUser);
-				if (!fromUser.contains("ALGORITMOS")) {
-					System.out.println("No contiene algoritmos");
-					break;
-				}
-				algoritmos = fromUser.split(":");
-				algS = algoritmos[1];
-				algA = algoritmos[2];
-				hmac = algoritmos[3];
-				crearLlaves();
-				boolean nuevo = true;
-				while (ejecutar && nuevo) {
-					fromServer = lector.readLine();
-					if (fromServer.equals("ERROR")) {
-						System.out.println("se murio");
+				} else if (fromServer.equals("OK")) {
+					System.out.println("todo piloto");
+					X509Certificate certificadoC = crearCD(new KeyPair(llavePublica, llavePrivada));
+					byte[] mybyte = certificadoC.getEncoded();
+					String mycosa = DatatypeConverter.printHexBinary(mybyte);
+					// Se envia el certificado
+					escritor.flush();
+					escritor.println(mycosa);
+					escritor.flush();
+					System.out.println(mycosa);
+					// Se recibe el certificado del servidor
+					CertificateFactory cf = CertificateFactory.getInstance("X509");
+					System.out.println("Generando el certificado");
+					String s = lector.readLine();
+					System.out.println(s);
+					if (!s.equals("OK")) {
+						System.out.println("No se mandó bien el certificado");
 						break;
-					} else if (fromServer.equals("OK")) {
-						System.out.println("todo piloto");
-						X509Certificate certificadoC = crearCD(new KeyPair(llavePublica, llavePrivada));
-						byte[] mybyte = certificadoC.getEncoded();
-						String mycosa = DatatypeConverter.printHexBinary(mybyte);
-						// Se envia el certificado
-						escritor.flush();
-						escritor.println(mycosa);
-						escritor.flush();
-						System.out.println(mycosa);
-						// Se recibe el certificado del servidor
-						CertificateFactory cf = CertificateFactory.getInstance("X509");
-						System.out.println("Generando el certificado");
-						String s = lector.readLine();
-						System.out.println(s);
-						if (!s.equals("OK")) {
-							System.out.println("No se mandó bien el certificado");
-							break;
-						}
-						System.out.println(s);
-						s = lector.readLine();
-						ByteArrayInputStream paraEsc = new ByteArrayInputStream(DatatypeConverter.parseHexBinary(s));
-
-						System.out.println("maybe se traba");
-						certificadoS = (X509Certificate) cf.generateCertificate(paraEsc);
-						byte[] certificadoEnBytes = certificadoS.getEncoded();
-						System.out.println("Termina de generarlo");
-						escritor.println("OK");
-						escritor.flush();
-						// Se verifica la validez
-						// try {
-						// certificadoS.checkValidity();
-						// System.out.println("El certificado es valido");
-						// escritor.println("OK");
-						// estado++;
-						// } catch (Exception e) {
-						// System.out.println("El certificado no es valido " + e.getCause() + " " +
-						// e.getMessage());
-						// escritor.println("ERROR");
-						// break;
-						// }
-						fromServer = lector.readLine();
-						// Se desencripta
-						System.out.println("Entra a desencriptar, guardar y luego encriptar");
-						String llavedescifrada = procesoAsimetrico(fromServer.getBytes(), algS,
-								certificadoS.getPublicKey());
-						escritor.println(llavedescifrada);
-						// Recibe el mensaje y lo lee
-						// Obtiene el hmac del Mensaje
-						fromServer = lector.readLine();
-						if (!fromServer.equals("OK")) {
-							System.out.println("Falló");
-							break;
-						}
-						System.out.println("Por favor ingrese la solicitud");
-						fromUser = "1234";
-						byte[] clearText = fromUser.getBytes();
-						byte[] cifrao;
-						byte[] macMesg;
-						Mac mac = Mac.getInstance(hmac);
-						mac.init(llaveSimetrica);
-						macMesg = mac.doFinal(fromUser.getBytes());
-						// Encripta y envía el mensaje
-						Cipher cipher = Cipher.getInstance(algS);
-						cipher.init(Cipher.ENCRYPT_MODE, certificadoS.getPublicKey());
-						cifrao = cipher.doFinal(clearText);
-
-						fromServer = printByteArrayHexa(cifrao);
-						System.out.println(fromUser);
-						escritor.println(fromUser);
-
-						// Envía el hash del mensaje
-						fromServer = printByteArrayHexa(macMesg);
-						escritor.println(fromUser);
-						nuevo = false;
-						fromServer = lector.readLine();
-						throw new Exception("Finaliza la comunicación");
 					}
+					System.out.println(s);
+					s = lector.readLine();
+					ByteArrayInputStream paraEsc = new ByteArrayInputStream(DatatypeConverter.parseHexBinary(s));
+
+					System.out.println("maybe se traba");
+					certificadoS = (X509Certificate) cf.generateCertificate(paraEsc);
+					byte[] certificadoEnBytes = certificadoS.getEncoded();
+					System.out.println("Termina de generarlo");
+					escritor.println("OK");
+					escritor.flush();
+					// Se verifica la validez
+					// try {
+					// certificadoS.checkValidity();
+					// System.out.println("El certificado es valido");
+					// escritor.println("OK");
+					// estado++;
+					// } catch (Exception e) {
+					// System.out.println("El certificado no es valido " + e.getCause() + " " +
+					// e.getMessage());
+					// escritor.println("ERROR");
+					// break;
+					// }
+					fromServer = lector.readLine();
+					// Se desencripta
+					System.out.println("Entra a desencriptar, guardar y luego encriptar");
+					String llavedescifrada = procesoAsimetrico(fromServer.getBytes(), algS,
+							certificadoS.getPublicKey());
+					escritor.println(llavedescifrada);
+					// Recibe el mensaje y lo lee
+					// Obtiene el hmac del Mensaje
+					fromServer = lector.readLine();
+					if (!fromServer.equals("OK")) {
+						System.out.println("Falló");
+						break;
+					}
+					System.out.println("Por favor ingrese la solicitud");
+					fromUser = "1234";
+					byte[] clearText = fromUser.getBytes();
+					byte[] cifrao;
+					byte[] macMesg;
+					Mac mac = Mac.getInstance(hmac);
+					mac.init(llaveSimetrica);
+					macMesg = mac.doFinal(fromUser.getBytes());
+					// Encripta y envía el mensaje
+					Cipher cipher = Cipher.getInstance(algS);
+					cipher.init(Cipher.ENCRYPT_MODE, llaveSimetrica);
+					cifrao = cipher.doFinal(clearText);
+
+					fromServer = printByteArrayHexa(cifrao);
+					System.out.println(fromUser);
+					escritor.println(fromUser);
+
+					// Envía el hash del mensaje
+					fromServer = printByteArrayHexa(macMesg);
+					escritor.println(fromUser);
+					nuevo = false;
+					fromServer = lector.readLine();
 				}
 			}
-
-		} catch (Exception e) {
-			System.err.println("Exception: " + e.getMessage());
-			System.exit(1);
 		}
-	}
+		}
 
-	public static void procesoSinCifrado() {
+		public static void procesoSinCifrado() {
 
-		Socket socket = null;
-		PrintWriter escritor = null;
-		BufferedReader lector = null;
+			Socket socket = null;
+			PrintWriter escritor = null;
+			BufferedReader lector = null;
 
-		try {
-			socket = new Socket(HOST, PUERTO);
-			escritor = new PrintWriter(socket.getOutputStream(), true);
-			lector = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-			Cliente c = new Cliente();
-			String fromServer;
-			String fromUser;
+			try {
+				socket = new Socket(HOST, PUERTO);
+				escritor = new PrintWriter(socket.getOutputStream(), true);
+				lector = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+				Cliente c = new Cliente();
+				String fromServer;
+				String fromUser;
 
-			int estado = 0;
+				int estado = 0;
 
-			long startVer = 0;
+				long startVer = 0;
 
-			// fromServer = lector.readLine();
-			if (estado == 0) {
-				System.out.print("Escriba el mensaje para enviar:");
+				// fromServer = lector.readLine();
+				if (estado == 0) {
+					System.out.print("Escriba el mensaje para enviar:");
 
-				escritor.println(NUMERO_CARGA);
-				fromUser = "HOLA";
-				escritor.println(fromUser);
+					escritor.println(NUMERO_CARGA);
+					fromUser = "HOLA";
+					escritor.println(fromUser);
 
-				estado++;
-			} else if (estado == 1) {
-				fromServer = lector.readLine();
-				if (fromServer.equalsIgnoreCase("OK")) {
-					System.out.println("OK");
+					estado++;
+				} else if (estado == 1) {
+					fromServer = lector.readLine();
+					if (fromServer.equalsIgnoreCase("OK")) {
+						System.out.println("OK");
 
-					System.out.print("Escriba algoritmos para enviar:");
+						System.out.print("Escriba algoritmos para enviar:");
 
-					fromUser = "ALGORITMOS:AES:RSA:HMACMD5";
+						fromUser = "ALGORITMOS:AES:RSA:HMACMD5";
+
+						escritor.println(fromUser);
+						estado++;
+					} else {
+						System.out.println(fromServer);
+					}
+				} else if (estado == 2) {
+					// Se manda el certificado
+					fromServer = lector.readLine();
+					System.out.println(fromServer);
+					if (fromServer.equalsIgnoreCase("OK")) {
+						String certificadoEnString = "Certificado super seguro";
+						System.out.println("Mandar certificado cliente");
+
+						escritor.println(certificadoEnString);
+						estado++;
+
+					} else {
+						System.out.println(fromServer);
+					}
+
+				} else if (estado == 3) {
+					// Recibe el certificado
+
+					fromServer = lector.readLine();
+					System.out.println(fromServer);
+
+					if (fromServer.equalsIgnoreCase("OK")) {
+						fromServer = lector.readLine();
+						System.out.println(fromServer);
+						System.out.println("Recibir certificado servidor");
+
+						escritor.println("OK");
+						// -------------------Se comienza la medida del monitor para el tiempo de
+						// verificación ---------
+						startVer = System.currentTimeMillis();
+						estado++;
+					}
+
+				} else if (estado == 4) {
+					// Devolver la llave
+					System.out.println("Devolver la llave");
+					fromServer = lector.readLine();
+					escritor.println(fromServer);
+
+					estado++;
+
+				} else if (estado == 5) {
+					fromServer = lector.readLine();
+					System.out.println(fromServer);
+
+					// -------------------Se finaliza la medida del monitor para el tiempo de
+					// verificación ---------
+					long fin1 = System.currentTimeMillis();
+					long resta1 = fin1 - startVer;
+
+					Monitor.addTiemposVerificacion(resta1);
+
+					System.out.println("Haga la consulta");
+
+					fromUser = "12345";
 
 					escritor.println(fromUser);
-					estado++;
-				} else {
-					System.out.println(fromServer);
-				}
-			} else if (estado == 2) {
-				// Se manda el certificado
-				fromServer = lector.readLine();
-				System.out.println(fromServer);
-				if (fromServer.equalsIgnoreCase("OK")) {
-					String certificadoEnString = "Certificado super seguro";
-					System.out.println("Mandar certificado cliente");
-
-					escritor.println(certificadoEnString);
-					estado++;
-
-				} else {
-					System.out.println(fromServer);
-				}
-
-			} else if (estado == 3) {
-				// Recibe el certificado
-
-				fromServer = lector.readLine();
-				System.out.println(fromServer);
-
-				if (fromServer.equalsIgnoreCase("OK")) {
-					fromServer = lector.readLine();
-					System.out.println(fromServer);
-					System.out.println("Recibir certificado servidor");
-
-					escritor.println("OK");
 					// -------------------Se comienza la medida del monitor para el tiempo de
 					// verificación ---------
-					startVer = System.currentTimeMillis();
-					estado++;
+					long start = System.currentTimeMillis();
+
+					fromServer = lector.readLine();
+					System.out.println(fromServer);
+
+					// -------------------Termina la medida del monitor para el tiempo de
+					// verificación ---------
+					long fin = System.currentTimeMillis();
+
+					long resta = fin - start;
+
+					Monitor.addTiemposConsulta(resta);
 				}
 
-			} else if (estado == 4) {
-				// Devolver la llave
-				System.out.println("Devolver la llave");
-				fromServer = lector.readLine();
-				escritor.println(fromServer);
+				escritor.close();
+				lector.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 
-				estado++;
+		public static void main(String[] args) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, NoSuchProviderException, IllegalStateException, SignatureException, OperatorCreationException, CertificateException {
 
-			} else if (estado == 5) {
-				fromServer = lector.readLine();
-				System.out.println(fromServer);
+			Monitor monitor1 = new Monitor("verificacion");
+			Monitor monitor2 = new Monitor("consulta");
 
-				// -------------------Se finaliza la medida del monitor para el tiempo de
-				// verificación ---------
-				long fin1 = System.currentTimeMillis();
-				long resta1 = fin1 - startVer;
 
-				Monitor.addTiemposVerificacion(resta1);
+			Cliente cliente = new Cliente("SEGURO");
 
-				System.out.println("Haga la consulta");
+			// String respuesta = stdIn.readLine();
+			// TODO Cambiar por el parametro despues de probar
+			if (cliente.SEGURIDAD.equals("NOSEGURO")) {
+				System.out.println("Protocolo no seguro");
+				procesoSinCifrado();
 
-				fromUser = "1234";
+			} else if (cliente.SEGURIDAD.equals("SEGURO")) {
+				System.out.println("Protocolo seguro");
+				procesoConCifrado();
 
-				escritor.println(fromUser);
-				// -------------------Se comienza la medida del monitor para el tiempo de
-				// verificación ---------
-				long start = System.currentTimeMillis();
-
-				escritor.println("1234");
-
-				fromServer = lector.readLine();
-				System.out.println(fromServer);
-
-				// -------------------Termina la medida del monitor para el tiempo de
-				// verificación ---------
-				long fin = System.currentTimeMillis();
-
-				long resta = fin - start;
-
-				Monitor.addTiemposConsulta(resta);
 			}
 
-			escritor.close();
-			lector.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+			// Cliente c = new Cliente("SEGURO");
 
-	public static void main(String[] args) throws IOException {
+			ArrayList<ArrayList<Long>> listasVer = new ArrayList<>();
+			ArrayList<ArrayList<Long>> listasConsul = new ArrayList<>();
 
-		Monitor monitor1 = new Monitor("verificacion");
-		Monitor monitor2 = new Monitor("consulta");
+			for (int i = 0; i < 10; i++) {
 
-		
-		Cliente cliente = new Cliente("SEGURO");
-		
-		// String respuesta = stdIn.readLine();
-		// TODO Cambiar por el parametro despues de probar
-		if (cliente.SEGURIDAD.equals("NOSEGURO")) {
-			System.out.println("Protocolo no seguro");
-			procesoSinCifrado();
+				Generador gen = new Generador(Cliente.NUMERO_CARGA, Cliente.RETRASO);
+				ArrayList<Long> listaVerTemp = Monitor.getTiemposVerificacion();
+				ArrayList<Long> listaConsulTemp = Monitor.getTiemposConsulta();
 
-		} else if (cliente.SEGURIDAD.equals("SEGURO")) {
-			System.out.println("Protocolo seguro");
-			procesoConCifrado();
+				listasVer.add(listaVerTemp);
+				listasConsul.add( listaConsulTemp);
 
-		}
-
-		// Cliente c = new Cliente("SEGURO");
-
-		ArrayList<ArrayList<Long>> listasVer = new ArrayList<>();
-		ArrayList<ArrayList<Long>> listasConsul = new ArrayList<>();
-
-		for (int i = 0; i < 10; i++) {
-
-			Generador gen = new Generador(Cliente.NUMERO_CARGA, Cliente.RETRASO);
-			ArrayList<Long> listaVerTemp = Monitor.getTiemposVerificacion();
-			ArrayList<Long> listaConsulTemp = Monitor.getTiemposConsulta();
-
-			listasVer.add(listaVerTemp);
-			listasConsul.add( listaConsulTemp);
-
-			Monitor.reiniciarArrayListVer();
-			Monitor.reiniciarArrayListConsu();
-		}
-		String path = System.getProperty("user.dir");
-
-		/*
-		 * SEGURO|NOSEGURO-carga-#threads
-		 * 
-		 */
-		String pruebaActual = Cliente.SEGURIDAD + "-" + Cliente.NUMERO_CARGA + "-" + Cliente.NUMERO_THREADS;
-
-		String nombreArchivoVer = "verificaciones-" + pruebaActual + ".csv";
-		String nombreArchivoConsul = "consultas-" + pruebaActual + ".csv";
-
-		PrintWriter writerVerificacion = null;
-		PrintWriter writerConsul = null;
-		try {
-			writerVerificacion = new PrintWriter(
-					path + File.separator + "data" + File.separator + nombreArchivoVer);
-			writerConsul = new PrintWriter(
-					path + File.separator + "data" + File.separator + nombreArchivoConsul);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		writerVerificacion.println("sep=,");
-		writerConsul.println("sep=,");
-
-		// Imprime la información
-		for (ArrayList<Long> arrayList : listasVer) {
-
-			ArrayList<Long> datos = arrayList;
-			StringBuilder builderVer = new StringBuilder();
-
-			for (int i = 0; i < datos.size(); i++) {
-				if (i != datos.size() - 1) {
-					builderVer.append(datos.get(i) + ",");
-					System.out.println("Entra " + datos.get(i));
-				} else {
-					builderVer.append(datos.get(i));
-				}
+				Monitor.reiniciarArrayListVer();
+				Monitor.reiniciarArrayListConsu();
 			}
+			String path = System.getProperty("user.dir");
 
-			writerVerificacion.println(builderVer.toString());
+			/*
+			 * SEGURO|NOSEGURO-carga-#threads
+			 * 
+			 */
+			String pruebaActual = Cliente.SEGURIDAD + "-" + Cliente.NUMERO_CARGA + "-" + Cliente.NUMERO_THREADS;
 
-		}
-		for (ArrayList<Long> arrayList2 : listasConsul) {
+			String nombreArchivoVer = "verificaciones-" + pruebaActual + ".csv";
+			String nombreArchivoConsul = "consultas-" + pruebaActual + ".csv";
 
-			StringBuilder builder2 = new StringBuilder();
-			ArrayList<Long> datos2 = arrayList2;
+			PrintWriter writerVerificacion = null;
+			PrintWriter writerConsul = null;
+			try {
+				writerVerificacion = new PrintWriter(
+						path + File.separator + "data" + File.separator + nombreArchivoVer);
+				writerConsul = new PrintWriter(
+						path + File.separator + "data" + File.separator + nombreArchivoConsul);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			writerVerificacion.println("sep=,");
+			writerConsul.println("sep=,");
 
-			for (int i = 0; i < datos2.size(); i++) {
-				if (i != datos2.size() - 1) {
-					builder2.append(datos2.get(i) + ",");
-					System.out.println("Entra " + datos2.get(i));
-				} else {
-					builder2.append(datos2.get(i));
+			// Imprime la información
+			for (ArrayList<Long> arrayList : listasVer) {
+
+				ArrayList<Long> datos = arrayList;
+				StringBuilder builderVer = new StringBuilder();
+
+				for (int i = 0; i < datos.size(); i++) {
+					if (i != datos.size() - 1) {
+						builderVer.append(datos.get(i) + ",");
+						System.out.println("Entra " + datos.get(i));
+					} else {
+						builderVer.append(datos.get(i));
+					}
 				}
 
+				writerVerificacion.println(builderVer.toString());
+
 			}
-			writerConsul.println(builder2.toString());
+			for (ArrayList<Long> arrayList2 : listasConsul) {
+
+				StringBuilder builder2 = new StringBuilder();
+				ArrayList<Long> datos2 = arrayList2;
+
+				for (int i = 0; i < datos2.size(); i++) {
+					if (i != datos2.size() - 1) {
+						builder2.append(datos2.get(i) + ",");
+						System.out.println("Entra " + datos2.get(i));
+					} else {
+						builder2.append(datos2.get(i));
+					}
+
+				}
+				writerConsul.println(builder2.toString());
+			}
+
+			System.out.println("acaba de verificar");
+
+			writerVerificacion.close();
+			writerConsul.close();
+
+			System.out.println("Tiempo verificacion " + Monitor.getTiemposDeVerificacionPromedio());
+
 		}
 
-		System.out.println("acaba de verificar");
-
-		writerVerificacion.close();
-		writerConsul.close();
-
-		System.out.println("Tiempo verificacion " + Monitor.getTiemposDeVerificacionPromedio());
-
-	}
-
-	public static String printByteArrayHexa(byte[] byteArray) {
-		String out = "";
-		for (int i = 0; i < byteArray.length; i++) {
-			if ((byteArray[i] & 0xff) <= 0xf) {
-				out += "0";
+		public static String printByteArrayHexa(byte[] byteArray) {
+			String out = "";
+			for (int i = 0; i < byteArray.length; i++) {
+				if ((byteArray[i] & 0xff) <= 0xf) {
+					out += "0";
+				}
+				out += Integer.toHexString(byteArray[i] & 0xff).toUpperCase();
 			}
-			out += Integer.toHexString(byteArray[i] & 0xff).toUpperCase();
+			System.out.println(out);
+			return out;
 		}
-		System.out.println(out);
-		return out;
 	}
-}
