@@ -30,19 +30,21 @@ public class Coordinador {
 		// Crea el socket que escucha en el puerto seleccionado.
 		ss = new ServerSocket(ip);
 		System.out.println(MAESTRO + "Socket creado.");		
-		while (true) {
-			try { 
+		while (true) 
+		{
+			try 
+			{ 				
 				Socket sc = ss.accept();
 				System.out.println(MAESTRO + "Cliente " + idThread + " aceptado.");
 				Delegado4 d4 = new Delegado4(sc,idThread);
 				idThread++;
 				d4.start();
-			} catch (IOException e) {
+			} 
+			catch (IOException e) 
+			{
 				System.out.println(MAESTRO + "Error creando el socket cliente.");
 				e.printStackTrace();
 			}
 		}
 	}
-
-
 }
