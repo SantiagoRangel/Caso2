@@ -334,244 +334,242 @@ public class Cliente {
 				}
 			}
 		}
-		}
-
-		public static void procesoSinCifrado() {
-
-			Socket socket = null;
-			PrintWriter escritor = null;
-			BufferedReader lector = null;
-
-			try {
-				socket = new Socket(HOST, PUERTO);
-				escritor = new PrintWriter(socket.getOutputStream(), true);
-				lector = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-				BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-				Cliente c = new Cliente();
-				String fromServer;
-				String fromUser;
-
-				int estado = 0;
-
-				long startVer = 0;
-
-				// fromServer = lector.readLine();
-				if (estado == 0) {
-					System.out.print("Escriba el mensaje para enviar:");
-
-					escritor.println(NUMERO_CARGA);
-					fromUser = "HOLA";
-					escritor.println(fromUser);
-
-					estado++;
-				} else if (estado == 1) {
-					fromServer = lector.readLine();
-					if (fromServer.equalsIgnoreCase("OK")) {
-						System.out.println("OK");
-
-						System.out.print("Escriba algoritmos para enviar:");
-
-						fromUser = "ALGORITMOS:AES:RSA:HMACMD5";
-
-						escritor.println(fromUser);
-						estado++;
-					} else {
-						System.out.println(fromServer);
-					}
-				} else if (estado == 2) {
-					// Se manda el certificado
-					fromServer = lector.readLine();
-					System.out.println(fromServer);
-					if (fromServer.equalsIgnoreCase("OK")) {
-						String certificadoEnString = "Certificado super seguro";
-						System.out.println("Mandar certificado cliente");
-
-						escritor.println(certificadoEnString);
-						estado++;
-
-					} else {
-						System.out.println(fromServer);
-					}
-
-				} else if (estado == 3) {
-					// Recibe el certificado
-
-					fromServer = lector.readLine();
-					System.out.println(fromServer);
-
-					if (fromServer.equalsIgnoreCase("OK")) {
-						fromServer = lector.readLine();
-						System.out.println(fromServer);
-						System.out.println("Recibir certificado servidor");
-
-						escritor.println("OK");
-						// -------------------Se comienza la medida del monitor para el tiempo de
-						// verificación ---------
-						startVer = System.currentTimeMillis();
-						estado++;
-					}
-
-				} else if (estado == 4) {
-					// Devolver la llave
-					System.out.println("Devolver la llave");
-					fromServer = lector.readLine();
-					escritor.println(fromServer);
-
-					estado++;
-
-				} else if (estado == 5) {
-					fromServer = lector.readLine();
-					System.out.println(fromServer);
-
-					// -------------------Se finaliza la medida del monitor para el tiempo de
-					// verificación ---------
-					long fin1 = System.currentTimeMillis();
-					long resta1 = fin1 - startVer;
-
-					Monitor.addTiemposVerificacion(resta1);
-
-					System.out.println("Haga la consulta");
-
-					fromUser = "12345";
-
-					escritor.println(fromUser);
-					// -------------------Se comienza la medida del monitor para el tiempo de
-					// verificación ---------
-					long start = System.currentTimeMillis();
-
-					fromServer = lector.readLine();
-					System.out.println(fromServer);
-
-					// -------------------Termina la medida del monitor para el tiempo de
-					// verificación ---------
-					long fin = System.currentTimeMillis();
-
-					long resta = fin - start;
-
-					Monitor.addTiemposConsulta(resta);
-				}
-
-				escritor.close();
-				lector.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-
-		public static void main(String[] args) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, NoSuchProviderException, IllegalStateException, SignatureException, OperatorCreationException, CertificateException {
-
-			Monitor monitor1 = new Monitor("verificacion");
-			Monitor monitor2 = new Monitor("consulta");
-
-
-			Cliente cliente = new Cliente("SEGURO");
-
-			// String respuesta = stdIn.readLine();
-			// TODO Cambiar por el parametro despues de probar
-			if (cliente.SEGURIDAD.equals("NOSEGURO")) {
-				System.out.println("Protocolo no seguro");
-				procesoSinCifrado();
-
-			} else if (cliente.SEGURIDAD.equals("SEGURO")) {
-				System.out.println("Protocolo seguro");
-				procesoConCifrado();
-
-			}
-
-			// Cliente c = new Cliente("SEGURO");
-
-			ArrayList<ArrayList<Long>> listasVer = new ArrayList<>();
-			ArrayList<ArrayList<Long>> listasConsul = new ArrayList<>();
-
-			for (int i = 0; i < 10; i++) {
-
-				Generador gen = new Generador(Cliente.NUMERO_CARGA, Cliente.RETRASO);
-				ArrayList<Long> listaVerTemp = Monitor.getTiemposVerificacion();
-				ArrayList<Long> listaConsulTemp = Monitor.getTiemposConsulta();
-
-				listasVer.add(listaVerTemp);
-				listasConsul.add( listaConsulTemp);
-
-				Monitor.reiniciarArrayListVer();
-				Monitor.reiniciarArrayListConsu();
-			}
-			String path = System.getProperty("user.dir");
-
-			/*
-			 * SEGURO|NOSEGURO-carga-#threads
-			 * 
-			 */
-			String pruebaActual = Cliente.SEGURIDAD + "-" + Cliente.NUMERO_CARGA + "-" + Cliente.NUMERO_THREADS;
-
-			String nombreArchivoVer = "verificaciones-" + pruebaActual + ".csv";
-			String nombreArchivoConsul = "consultas-" + pruebaActual + ".csv";
-
-			PrintWriter writerVerificacion = null;
-			PrintWriter writerConsul = null;
-			try {
-				writerVerificacion = new PrintWriter(
-						path + File.separator + "data" + File.separator + nombreArchivoVer);
-				writerConsul = new PrintWriter(
-						path + File.separator + "data" + File.separator + nombreArchivoConsul);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			writerVerificacion.println("sep=,");
-			writerConsul.println("sep=,");
-
-			// Imprime la información
-			for (ArrayList<Long> arrayList : listasVer) {
-
-				ArrayList<Long> datos = arrayList;
-				StringBuilder builderVer = new StringBuilder();
-
-				for (int i = 0; i < datos.size(); i++) {
-					if (i != datos.size() - 1) {
-						builderVer.append(datos.get(i) + ",");
-						System.out.println("Entra " + datos.get(i));
-					} else {
-						builderVer.append(datos.get(i));
-					}
-				}
-
-				writerVerificacion.println(builderVer.toString());
-
-			}
-			for (ArrayList<Long> arrayList2 : listasConsul) {
-
-				StringBuilder builder2 = new StringBuilder();
-				ArrayList<Long> datos2 = arrayList2;
-
-				for (int i = 0; i < datos2.size(); i++) {
-					if (i != datos2.size() - 1) {
-						builder2.append(datos2.get(i) + ",");
-						System.out.println("Entra " + datos2.get(i));
-					} else {
-						builder2.append(datos2.get(i));
-					}
-
-				}
-				writerConsul.println(builder2.toString());
-			}
-
-			System.out.println("acaba de verificar");
-
-			writerVerificacion.close();
-			writerConsul.close();
-
-			System.out.println("Tiempo verificacion " + Monitor.getTiemposDeVerificacionPromedio());
-
-		}
-
-		public static String printByteArrayHexa(byte[] byteArray) {
-			String out = "";
-			for (int i = 0; i < byteArray.length; i++) {
-				if ((byteArray[i] & 0xff) <= 0xf) {
-					out += "0";
-				}
-				out += Integer.toHexString(byteArray[i] & 0xff).toUpperCase();
-			}
-			System.out.println(out);
-			return out;
-		}
 	}
+
+	public static void procesoSinCifrado() throws IOException {
+
+		Socket socket = null;
+		PrintWriter escritor = null;
+		BufferedReader lector = null;
+
+		socket = new Socket(HOST, PUERTO);
+		escritor = new PrintWriter(socket.getOutputStream(), true);
+		lector = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+		Cliente c = new Cliente();
+		String fromServer;
+		String fromUser;
+
+		int estado = 0;
+
+		long versi = 0;
+
+		// fromServer = lector.readLine();
+		if (estado == 0) {
+			System.out.print("Escriba el mensaje para enviar:");
+
+			fromUser = "HOLA";
+			escritor.println(fromUser);
+
+			estado++;
+		} if (estado == 1) {
+			fromServer = lector.readLine();
+			if (fromServer.equalsIgnoreCase("OK")) {
+				System.out.println("OK");
+
+				System.out.print("Escriba algoritmos para enviar:");
+
+				fromUser = "ALGORITMOS:AES:RSA:HMACMD5";
+
+				escritor.println(fromUser);
+				estado++;
+			} else {
+				System.out.println(fromServer);
+			}
+		} if (estado == 2) {
+			// Se manda el certificado
+			fromServer = lector.readLine();
+			System.out.println(fromServer);
+			if (fromServer.equalsIgnoreCase("OK")) {
+				String certificadoEnString = "Certificado super seguro";
+				System.out.println("Mandar certificado cliente");
+
+				escritor.println(certificadoEnString);
+				estado++;
+
+			} else {
+				System.out.println(fromServer);
+			}
+
+		} if (estado == 3) {
+			// Recibe el certificado
+
+			fromServer = lector.readLine();
+			System.out.println(fromServer);
+
+			if (fromServer.equalsIgnoreCase("OK")) {
+				fromServer = lector.readLine();
+				System.out.println(fromServer);
+				System.out.println("Recibir certificado servidor");
+
+				escritor.println("OK");
+				// -------------------Se comienza la medida del monitor para el tiempo de verificación ---------
+				versi = System.currentTimeMillis();
+				estado++;
+			}
+
+		} if (estado == 4) {
+			// Devolver la llave
+			System.out.println("Devolver la llave");
+			fromServer = lector.readLine();
+			escritor.println(fromServer);
+
+			estado++;
+
+		}  if (estado == 5) {
+			fromServer = lector.readLine();
+			System.out.println(fromServer);
+
+			// -------------------Se finaliza la medida del monitor para el tiempo de
+			// verificación ---------
+			long fin = System.currentTimeMillis();
+			long restaversi1 = fin - versi;
+
+			Monitor.addTiemposVerificacion(restaversi1);
+
+			System.out.println("Haga la consulta");
+
+			fromUser = "12345";
+
+			escritor.println(fromUser);
+			// -------------------Se comienza la medida del monitor para el tiempo de
+			// verificación ---------
+			long start = System.currentTimeMillis();
+
+			fromServer = lector.readLine();
+			System.out.println(fromServer);
+
+			// -------------------Termina la medida del monitor para el tiempo de
+			// verificación ---------
+			long fin2 = System.currentTimeMillis();
+
+			long resta = fin2 - start;
+
+			Monitor.addTiemposConsulta(resta);
+		}
+
+		escritor.close();
+		lector.close();
+
+	}
+
+	public static void main(String[] args) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, NoSuchProviderException, IllegalStateException, SignatureException, OperatorCreationException, CertificateException {
+
+		Monitor monitor1 = new Monitor("verificacion");
+		Monitor monitor2 = new Monitor("consulta");
+
+
+		Cliente cliente = new Cliente("NOSEGURO");
+
+		// String respuesta = stdIn.readLine();
+		// TODO Cambiar por el parametro despues de probar
+		if (cliente.SEGURIDAD.equals("NOSEGURO")) {
+			System.out.println("Protocolo no seguro");
+			procesoSinCifrado();
+
+		} else if (cliente.SEGURIDAD.equals("SEGURO")) {
+			System.out.println("Protocolo seguro");
+			procesoConCifrado();
+
+		}
+
+		// Cliente c = new Cliente("SEGURO");
+
+		ArrayList<ArrayList<Long>> listasVer = new ArrayList<>();
+		ArrayList<ArrayList<Long>> listasConsul = new ArrayList<>();
+
+		for (int i = 0; i < 10; i++) {
+
+			Generador gen = new Generador(Cliente.NUMERO_CARGA, Cliente.RETRASO);
+			ArrayList<Long> listaVerTemp = Monitor.getTiemposVerificacion();
+			ArrayList<Long> listaConsulTemp = Monitor.getTiemposConsulta();
+
+			listasVer.add(listaVerTemp);
+			listasConsul.add( listaConsulTemp);
+
+			Monitor.reiniciarArrayListVer();
+			Monitor.reiniciarArrayListConsu();
+		}
+		String path = System.getProperty("user.dir");
+
+		System.out.println(path);
+
+
+		/*
+		 * SEGURO|NOSEGURO-carga-#threads
+		 * 
+		 */
+		String pruebaActual = Cliente.SEGURIDAD + "-" + Cliente.NUMERO_CARGA + "-" + Cliente.NUMERO_THREADS;
+
+		String nombreArchivoVer = "verificaciones-" + pruebaActual + ".csv";
+		String nombreArchivoConsul = "consultas-" + pruebaActual + ".csv";
+
+		PrintWriter writerVerificacion = null;
+		PrintWriter writerConsul = null;
+		try {
+			writerVerificacion = new PrintWriter(
+					path + File.separator + "data" + File.separator + nombreArchivoVer);
+			writerConsul = new PrintWriter(
+					path + File.separator + "data" + File.separator + nombreArchivoConsul);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		writerVerificacion.println("sep=,");
+		writerConsul.println("sep=,");
+
+		// Imprime la información
+		for (ArrayList<Long> arrayList : listasVer) {
+
+			ArrayList<Long> datos = arrayList;
+			StringBuilder builderVer = new StringBuilder();
+
+			for (int i = 0; i < datos.size(); i++) {
+				if (i != datos.size() - 1) {
+					builderVer.append(datos.get(i) + ",");
+					System.out.println("Entra " + datos.get(i));
+				} else {
+					builderVer.append(datos.get(i));
+				}
+			}
+
+			writerVerificacion.println(builderVer.toString());
+
+		}
+		for (ArrayList<Long> arrayList2 : listasConsul) {
+
+			StringBuilder builder2 = new StringBuilder();
+			ArrayList<Long> datos2 = arrayList2;
+
+			for (int i = 0; i < datos2.size(); i++) {
+				if (i != datos2.size() - 1) {
+					builder2.append(datos2.get(i) + ",");
+					System.out.println("Entra " + datos2.get(i));
+				} else {
+					builder2.append(datos2.get(i));
+				}
+
+			}
+			writerConsul.println(builder2.toString());
+		}
+
+		System.out.println("acaba de verificar");
+
+		writerVerificacion.close();
+		writerConsul.close();
+
+		System.out.println("Tiempo verificacion " + Monitor.getTiemposDeVerificacionPromedio());
+
+	}
+
+	public static String printByteArrayHexa(byte[] byteArray) {
+		String out = "";
+		for (int i = 0; i < byteArray.length; i++) {
+			if ((byteArray[i] & 0xff) <= 0xf) {
+				out += "0";
+			}
+			out += Integer.toHexString(byteArray[i] & 0xff).toUpperCase();
+		}
+		System.out.println(out);
+		return out;
+	}
+}

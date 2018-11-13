@@ -12,8 +12,6 @@ public class Monitor extends Thread
 	private static ArrayList<Long> tiemposConsulta = new ArrayList<>();
 	
 	private long inicVer; 
-	private long startConsu;
-	private double memoria;	
 	private boolean terminado;
 	private String caso;
 	
@@ -55,16 +53,6 @@ public class Monitor extends Thread
 				tiemposConsulta.add(tiempo);
 		}		
 		return tiempo; 
-	}	
-	
-	public synchronized void addConsulta(long cons)
-	{
-		tiemposConsulta.add(cons);
-	}	
-	
-	public synchronized void addVer(long ver)
-	{
-		tiemposVerificacion.add(ver);
 	}
 	
 	public double getSystemCpuLoad() throws Exception 
@@ -90,6 +78,51 @@ public class Monitor extends Thread
 		}	
 		System.out.println("Promedio: " + prom + " milisegundos");		
 		return prom ; 		
+	}
+	
+	
+	
+	@Override
+	public void run()
+	{
+		long start = System.currentTimeMillis();
+		try 
+		{
+			synchronized (this) 
+			{				
+				wait();
+				System.out.println("paso: " + caso);
+			}			
+		} 
+		catch (InterruptedException e) 
+		{
+			e.printStackTrace();
+		} 
+		long fin = System.currentTimeMillis();
+		System.out.println("fin " + caso + "= " + fin );
+		long resta = fin-start;
+		System.out.println("RESTA "+ caso + "= " + resta );		
+		if(caso.equals("verificacion"))
+		{
+			addVer(resta);
+		}
+		else if(caso.equals("consulta")) 
+		{
+			addConsulta(resta);
+		}		
+		terminado = true; 
+	}	
+	
+	
+	
+	public synchronized void addConsulta(long cons)
+	{
+		tiemposConsulta.add(cons);
+	}	
+	
+	public synchronized void addVer(long ver)
+	{
+		tiemposVerificacion.add(ver);
 	}
 	
 	public synchronized static void addTiemposVerificacion(long x)
@@ -137,34 +170,7 @@ public class Monitor extends Thread
 		return terminado; 
 	}
 	
-	@Override
-	public void run()
-	{
-		long start = System.currentTimeMillis();
-		try 
-		{
-			synchronized (this) 
-			{				
-				wait();
-				System.out.println("paso: " + caso);
-			}			
-		} 
-		catch (InterruptedException e) 
-		{
-			e.printStackTrace();
-		} 
-		long fin = System.currentTimeMillis();
-		System.out.println("fin " + caso + "= " + fin );
-		long resta = fin-start;
-		System.out.println("RESTA "+ caso + "= " + resta );		
-		if(caso.equals("verificacion"))
-		{
-			addVer(resta);
-		}
-		else if(caso.equals("consulta")) 
-		{
-			addConsulta(resta);
-		}		
-		terminado = true; 
-	}	
+	
+	
+	
 }
